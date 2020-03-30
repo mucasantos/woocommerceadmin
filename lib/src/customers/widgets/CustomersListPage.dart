@@ -116,7 +116,7 @@ class _CustomersListPageState extends State<CustomersListPage> {
 
   fetchCustomersList() async {
     String url =
-        "$baseurl/wp-json/wc/v3/customers?page=$page&per_page=20&consumer_key=$username&consumer_secret=$password";
+        "$baseurl/wp-json/wc/v3/customers?page=$page&per_page=20&order=desc&orderby=registered_date&consumer_key=$username&consumer_secret=$password";
     setState(() {
       isListLoading = true;
     });

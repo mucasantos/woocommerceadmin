@@ -1,5 +1,7 @@
 import 'dart:convert';
+import 'dart:io';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_spinkit/flutter_spinkit.dart';
 import 'package:http/http.dart' as http;
 import 'package:recase/recase.dart';
@@ -16,6 +18,9 @@ class _EditProductPageState extends State<EditProductPage> {
   String baseurl = "https://www.kalashcards.com";
   String username = "ck_33c3f3430550132c2840167648ea0b3ab2d56941";
   String password = "cs_f317f1650e418657d745eabf02e955e2c70bba46";
+
+  final scaffoldKey = new GlobalKey<ScaffoldState>();
+
   bool isProductDataReady = false;
   bool isError = true;
   Map productDetails = Map();
@@ -49,6 +54,7 @@ class _EditProductPageState extends State<EditProductPage> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
+      key: scaffoldKey,
       appBar: AppBar(
         title: Text("Edit Product"),
       ),
@@ -270,7 +276,7 @@ class _EditProductPageState extends State<EditProductPage> {
     }
   }
 
-  updateProductDetails() {
+  updateProductDetails() async {
     Map<String, dynamic> updatedProductDetails = {};
     if (name != null) {
       updatedProductDetails["name"] = name;
@@ -287,7 +293,78 @@ class _EditProductPageState extends State<EditProductPage> {
     if (salePrice != null) {
       updatedProductDetails["sale_price"] = salePrice;
     }
-    print(updatedProductDetails);
+    if (dateOnSaleFrom != null) {
+      updatedProductDetails["date_on_sale_from"] = dateOnSaleFrom.toString();
+    }
+    if (dateOnSaleTo != null) {
+      updatedProductDetails["date_on_sale_to"] = dateOnSaleTo.toString();
+    }
+    if (stockStatus != null) {
+      updatedProductDetails["stock_status"] = stockStatus;
+    }
+    if (manageStock != null) {
+      updatedProductDetails["manage_stock"] = manageStock;
+      if (manageStock && stockQuantity != null) {
+        updatedProductDetails["stock_quantity"] = stockQuantity;
+      }
+    }
+    if (weight != null) {
+      updatedProductDetails["weight"] = weight;
+    }
+    if (length != null || width != null || height != null) {
+      updatedProductDetails["dimensions"] = {};
+      if (length != null) {
+        updatedProductDetails["dimensions"]["length"] = length;
+      }
+      if (width != null) {
+        updatedProductDetails["dimensions"]["width"] = width;
+      }
+      if (height != null) {
+        updatedProductDetails["dimensions"]["height"] = height;
+      }
+    }
+    String url =
+        "$baseurl/wp-json/wc/v3/products/${widget.id}?consumer_key=$username&consumer_secret=$password";
+    dynamic response;
+    try {
+      response = await http.put(
+        url,
+        headers: {HttpHeaders.contentTypeHeader: "application/json"},
+        body: json.encode(updatedProductDetails),
+      );
+      if (response.statusCode == 200) {
+        dynamic responseBody = json.decode(response.body);
+        if (responseBody is Map &&
+            responseBody.containsKey("id") &&
+            responseBody["id"] != null) {
+          scaffoldKey.currentState.showSnackBar(SnackBar(
+            content: Text("Product updated successfully..."),
+            duration: Duration(seconds: 3),
+          ));
+          Navigator.pop(context, "Product updated successfully...");
+        } else {
+          scaffoldKey.currentState.showSnackBar(SnackBar(
+            content: Text("Failed to update product"),
+            duration: Duration(seconds: 3),
+          ));
+        }
+      } else {
+        String errorCode = "";
+        if (json.decode(response.body) is Map &&
+            json.decode(response.body).containsKey("code")) {
+          errorCode = json.decode(response.body)["code"];
+        }
+        scaffoldKey.currentState.showSnackBar(SnackBar(
+          content: Text("Failed to update product. Error: $errorCode"),
+          duration: Duration(seconds: 3),
+        ));
+      }
+    } catch (e) {
+      scaffoldKey.currentState.showSnackBar(SnackBar(
+        content: Text("Failed to update product. Error: $e"),
+        duration: Duration(seconds: 3),
+      ));
+    }
   }
 
   Widget _mainLoadingWidget() {
@@ -309,32 +386,24 @@ class _EditProductPageState extends State<EditProductPage> {
     Widget productGeneralWidget = SizedBox.shrink();
     if (isProductDataReady) {
       List<Widget> productGeneralData = [];
-      TextEditingController nameController = TextEditingController(text: name);
-      nameController.addListener((){
-        setState(() {
-        name = nameController.text;
-      });
-      });
-
-      productGeneralData.add(TextField(
-        controller: nameController,
-        decoration: InputDecoration(
-          labelText: "Name",
-        ),
-        // onChanged: (value) {
-        //   setState(() {
-        //     name = value;
-        //   });
-        //   // TextSelection previousSelection = nameController.selection;
-        //   nameController.text = name;
-        //   // nameController.selection = previousSelection;
-        //   print(name);
-        // },
+      productGeneralData.add(TextFormField(
+        initialValue: name,
+        decoration: InputDecoration(labelText: "Name"),
+        onChanged: (value) {
+          setState(() {
+            name = value;
+          });
+        },
       ));
 
-      productGeneralData.add(TextField(
-        controller: TextEditingController()..text = sku,
+      productGeneralData.add(TextFormField(
+        initialValue: sku,
         decoration: InputDecoration(labelText: "SKU"),
+        onChanged: (value) {
+          setState(() {
+            sku = value;
+          });
+        },
       ));
 
       productGeneralWidget = ExpansionTile(
@@ -426,16 +495,34 @@ class _EditProductPageState extends State<EditProductPage> {
     if (isProductDataReady) {
       List<Widget> productPricingData = [];
 
-      productPricingData.add(TextField(
-        controller: TextEditingController()..text = regularPrice,
+      productPricingData.add(TextFormField(
+        initialValue: regularPrice,
+        keyboardType: TextInputType.number,
+        inputFormatters: [
+          WhitelistingTextInputFormatter(RegExp(r"^\d*\.?\d*"))
+        ],
         decoration: InputDecoration(
           labelText: "Regular Price",
         ),
+        onChanged: (value) {
+          setState(() {
+            regularPrice = value;
+          });
+        },
       ));
 
-      productPricingData.add(TextField(
-        controller: TextEditingController()..text = salePrice,
+      productPricingData.add(TextFormField(
+        initialValue: salePrice,
+        keyboardType: TextInputType.number,
+        inputFormatters: [
+          WhitelistingTextInputFormatter(RegExp(r"^\d*\.?\d*"))
+        ],
         decoration: InputDecoration(labelText: "Sale Price"),
+        onChanged: (value) {
+          setState(() {
+            salePrice = value;
+          });
+        },
       ));
 
       productPricingData.add(Row(
@@ -451,6 +538,7 @@ class _EditProductPageState extends State<EditProductPage> {
               child: new Center(
                 child: new RaisedButton(
                   onPressed: () async {
+                    FocusScope.of(context).requestFocus(FocusNode());
                     final DateTime picked = await showDatePicker(
                         context: context,
                         initialDate: (dateOnSaleFrom != null &&
@@ -488,6 +576,7 @@ class _EditProductPageState extends State<EditProductPage> {
               child: new Center(
                 child: new RaisedButton(
                   onPressed: () async {
+                    FocusScope.of(context).requestFocus(FocusNode());
                     final DateTime picked = await showDatePicker(
                         context: context,
                         initialDate: DateTime.now(),
@@ -587,9 +676,18 @@ class _EditProductPageState extends State<EditProductPage> {
       }
 
       if (stockStatus == "instock" && manageStock) {
-        productInventoryData.add(TextField(
-          controller: TextEditingController()..text = "$stockQuantity",
+        productInventoryData.add(TextFormField(
+          initialValue: "$stockQuantity",
+          keyboardType: TextInputType.number,
+          inputFormatters: [WhitelistingTextInputFormatter.digitsOnly],
           decoration: InputDecoration(labelText: "Stock Quantity"),
+          onChanged: (value) {
+            try {
+              setState(() {
+                stockQuantity = int.parse(value);
+              });
+            } catch (e) {}
+          },
         ));
       }
 
@@ -623,9 +721,18 @@ class _EditProductPageState extends State<EditProductPage> {
     if (isProductDataReady) {
       List<Widget> productWidgetData = [];
 
-      productWidgetData.add(TextField(
-        controller: TextEditingController()..text = weight,
+      productWidgetData.add(TextFormField(
+        initialValue: weight,
+        keyboardType: TextInputType.number,
+        inputFormatters: [
+          WhitelistingTextInputFormatter(RegExp(r"^\d*\.?\d*"))
+        ],
         decoration: InputDecoration(labelText: "Weight"),
+        onChanged: (value) {
+          setState(() {
+            weight = value;
+          });
+        },
       ));
 
       productWidgetData.add(Row(
@@ -633,28 +740,52 @@ class _EditProductPageState extends State<EditProductPage> {
           Expanded(
             child: Padding(
               padding: const EdgeInsets.fromLTRB(10, 0, 10, 0),
-              child: TextField(
-                controller: TextEditingController()..text = length,
-                decoration: InputDecoration(labelText: "L"),
-              ),
+              child: TextFormField(
+                  initialValue: length,
+                  keyboardType: TextInputType.number,
+                  inputFormatters: [
+                    WhitelistingTextInputFormatter(RegExp(r"^\d*\.?\d*"))
+                  ],
+                  decoration: InputDecoration(labelText: "L"),
+                  onChanged: (value) {
+                    setState(() {
+                      length = value;
+                    });
+                  }),
             ),
           ),
           Expanded(
             child: Padding(
               padding: const EdgeInsets.fromLTRB(10, 0, 10, 0),
-              child: TextField(
-                controller: TextEditingController()..text = width,
-                decoration: InputDecoration(labelText: "W"),
-              ),
+              child: TextFormField(
+                  initialValue: width,
+                  keyboardType: TextInputType.number,
+                  inputFormatters: [
+                    WhitelistingTextInputFormatter(RegExp(r"^\d*\.?\d*"))
+                  ],
+                  decoration: InputDecoration(labelText: "W"),
+                  onChanged: (value) {
+                    setState(() {
+                      width = value;
+                    });
+                  }),
             ),
           ),
           Expanded(
             child: Padding(
               padding: const EdgeInsets.fromLTRB(10, 0, 10, 0),
-              child: TextField(
-                controller: TextEditingController()..text = height,
-                decoration: InputDecoration(labelText: "H"),
-              ),
+              child: TextFormField(
+                  initialValue: height,
+                  keyboardType: TextInputType.number,
+                  inputFormatters: [
+                    WhitelistingTextInputFormatter(RegExp(r"^\d*\.?\d*"))
+                  ],
+                  decoration: InputDecoration(labelText: "H"),
+                  onChanged: (value) {
+                    setState(() {
+                      height = value;
+                    });
+                  }),
             ),
           ),
         ],

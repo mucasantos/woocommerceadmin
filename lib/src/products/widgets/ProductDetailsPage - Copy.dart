@@ -6,6 +6,7 @@ import 'package:recase/recase.dart';
 import 'package:unicorndial/unicorndial.dart';
 import 'package:woocommerceadmin/src/common/widgets/ImageViewer.dart';
 import 'package:woocommerceadmin/src/products/widgets/EditProductPage.dart';
+import 'package:flutter_offline/flutter_offline.dart';
 
 class ProductDetailsPage extends StatefulWidget {
   final int id;
@@ -23,7 +24,6 @@ class _ProductDetailsPageState extends State<ProductDetailsPage> {
   bool isProductDataReady = false;
   bool isError = false;
 
-  final scaffoldKey = new GlobalKey<ScaffoldState>();
   final GlobalKey<RefreshIndicatorState> _refreshIndicatorKey =
       new GlobalKey<RefreshIndicatorState>();
 
@@ -36,32 +36,82 @@ class _ProductDetailsPageState extends State<ProductDetailsPage> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      key: scaffoldKey,
       appBar: AppBar(
         title: Text("Product Details"),
       ),
-      body: !isProductDataReady
-          ? !isError ? _mainLoadingWidget() : Text("Error Fetching Data")
-          : RefreshIndicator(
-              key: _refreshIndicatorKey,
-              onRefresh: fetchProductDetails,
-              child: SingleChildScrollView(
-                scrollDirection: Axis.vertical,
-                padding: const EdgeInsets.all(0.0),
-                child: Column(
-                    mainAxisAlignment: MainAxisAlignment.start,
-                    mainAxisSize: MainAxisSize.max,
-                    crossAxisAlignment: CrossAxisAlignment.center,
-                    children: <Widget>[
-                      _productHeadlineWidget(),
-                      _productImagesWidget(),
-                      _productGeneralWidget(),
-                      _productPriceWidget(),
-                      _productInventoryWidget(),
-                      _productShippingWidget(),
-                    ]),
-              ),
-            ),
+      body: OfflineBuilder(
+          connectivityBuilder: (
+            BuildContext context,
+            ConnectivityResult connectivity,
+            Widget child,
+          ) {
+            final bool connected = connectivity != ConnectivityResult.none;
+            return Column(
+              children: [
+                AnimatedSwitcher(
+                    duration: const Duration(milliseconds: 350),
+                    child: connected
+                        ? Container(
+                            color: Colors.lightGreenAccent[400],
+                            height: 25,
+                            child: Row(
+                              mainAxisAlignment: MainAxisAlignment.center,
+                              children: <Widget>[
+                                Text(
+                                  'ONLINE',
+                                  style: TextStyle(color: Colors.black),
+                                ),
+                              ],
+                            ))
+                        : Container(
+                            color: Colors.red,
+                            height: 25,
+                            child: Row(
+                              mainAxisAlignment: MainAxisAlignment.center,
+                              children: <Widget>[
+                                Text(
+                                  'OFFLINE',
+                                  style: TextStyle(color: Colors.white),
+                                ),
+                                SizedBox(width: 8.0),
+                                SizedBox(
+                                  width: 12.0,
+                                  height: 12.0,
+                                  child: CircularProgressIndicator(
+                                    strokeWidth: 2.0,
+                                    valueColor: AlwaysStoppedAnimation<Color>(
+                                        Colors.white),
+                                  ),
+                                ),
+                              ],
+                            ),
+                          )),
+                Expanded(child: child),
+              ],
+            );
+          },
+          child: !isProductDataReady
+              ? !isError ? _mainLoadingWidget() : Text("Error Fetching Data")
+              : RefreshIndicator(
+                  key: _refreshIndicatorKey,
+                  onRefresh: fetchProductDetails,
+                  child: SingleChildScrollView(
+                    scrollDirection: Axis.vertical,
+                    padding: const EdgeInsets.all(0.0),
+                    child: Column(
+                        mainAxisAlignment: MainAxisAlignment.start,
+                        mainAxisSize: MainAxisSize.max,
+                        crossAxisAlignment: CrossAxisAlignment.center,
+                        children: <Widget>[
+                          _productHeadlineWidget(),
+                          _productImagesWidget(),
+                          _productGeneralWidget(),
+                          _productPriceWidget(),
+                          _productInventoryWidget(),
+                          _productShippingWidget(),
+                        ]),
+                  ),
+                )),
       floatingActionButton: isProductDataReady
           ? UnicornDialer(
               backgroundColor: Color.fromRGBO(100, 100, 100, 0.7),
@@ -78,19 +128,14 @@ class _ProductDetailsPageState extends State<ProductDetailsPage> {
                       backgroundColor: Colors.purple,
                       mini: true,
                       child: Icon(Icons.edit),
-                      onPressed: () async {
-                        final result = await Navigator.push(
+                      onPressed: () {
+                        Navigator.push(
                           context,
                           MaterialPageRoute(
                               builder: (context) => EditProductPage(
                                     id: widget.id,
                                   )),
                         );
-                        fetchProductDetails();
-                        scaffoldKey.currentState.showSnackBar(SnackBar(
-                          content: Text(result.toString()),
-                          duration: Duration(seconds: 3),
-                        ));
                       },
                     )),
                 UnicornButton(
