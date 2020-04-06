@@ -6,14 +6,25 @@ import 'package:charts_flutter/flutter.dart' as charts;
 import 'package:intl/intl.dart';
 
 class ReportsPage extends StatefulWidget {
+  final String baseurl;
+  final String username;
+  final String password;
+
+  ReportsPage({
+    Key key,
+    @required this.baseurl,
+    @required this.username,
+    @required this.password,
+  }) : super(key: key);
+
   @override
   _ReportsPageState createState() => _ReportsPageState();
 }
 
 class _ReportsPageState extends State<ReportsPage> {
-  String baseurl = "https://www.kalashcards.com";
-  String username = "ck_33c3f3430550132c2840167648ea0b3ab2d56941";
-  String password = "cs_f317f1650e418657d745eabf02e955e2c70bba46";
+  String baseurl;
+  String username;
+  String password;
 
   DateTime fromDate = DateTime.now().subtract(Duration(days: 6));
   DateTime toDate = DateTime.now();
@@ -54,6 +65,9 @@ class _ReportsPageState extends State<ReportsPage> {
   @override
   void initState() {
     super.initState();
+    baseurl = widget.baseurl;
+    username = widget.username;
+    password = widget.password;
     fetchAllReports();
   }
 

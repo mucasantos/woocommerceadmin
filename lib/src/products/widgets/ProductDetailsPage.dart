@@ -8,17 +8,23 @@ import 'package:woocommerceadmin/src/common/widgets/ImageViewer.dart';
 import 'package:woocommerceadmin/src/products/widgets/EditProductPage.dart';
 
 class ProductDetailsPage extends StatefulWidget {
+  final String baseurl;
+  final String username;
+  final String password;
   final int id;
-  ProductDetailsPage({Key key, this.id}) : super(key: key);
+  ProductDetailsPage(
+      {Key key,
+      @required this.baseurl,
+      @required this.username,
+      @required this.password,
+      @required this.id})
+      : super(key: key);
 
   @override
   _ProductDetailsPageState createState() => _ProductDetailsPageState();
 }
 
 class _ProductDetailsPageState extends State<ProductDetailsPage> {
-  String baseurl = "https://www.kalashcards.com";
-  String username = "ck_33c3f3430550132c2840167648ea0b3ab2d56941";
-  String password = "cs_f317f1650e418657d745eabf02e955e2c70bba46";
   Map productDetails = Map();
   bool isProductDataReady = false;
   bool isError = false;
@@ -83,14 +89,19 @@ class _ProductDetailsPageState extends State<ProductDetailsPage> {
                           context,
                           MaterialPageRoute(
                               builder: (context) => EditProductPage(
+                                    baseurl: widget.baseurl,
+                                    username: widget.username,
+                                    password: widget.password,
                                     id: widget.id,
                                   )),
                         );
                         fetchProductDetails();
-                        scaffoldKey.currentState.showSnackBar(SnackBar(
-                          content: Text(result.toString()),
-                          duration: Duration(seconds: 3),
-                        ));
+                        if (result is String) {
+                          scaffoldKey.currentState.showSnackBar(SnackBar(
+                            content: Text(result.toString()),
+                            duration: Duration(seconds: 3),
+                          ));
+                        }
                       },
                     )),
                 UnicornButton(
@@ -111,7 +122,7 @@ class _ProductDetailsPageState extends State<ProductDetailsPage> {
 
   Future<Null> fetchProductDetails() async {
     String url =
-        "$baseurl/wp-json/wc/v3/products/${widget.id}?consumer_key=$username&consumer_secret=$password";
+        "${widget.baseurl}/wp-json/wc/v3/products/${widget.id}?consumer_key=${widget.username}&consumer_secret=${widget.password}";
     setState(() {
       isError = false;
       isProductDataReady = false;
@@ -369,7 +380,7 @@ class _ProductDetailsPageState extends State<ProductDetailsPage> {
         ));
       }
       if (productDetails.containsKey("stock_quantity") &&
-          productDetails["stock_quantity"] is String) {
+          productDetails["stock_quantity"] is int) {
         productPriceData.add(Text(
           "Stock Qty: ${productDetails["stock_quantity"]}",
           style: Theme.of(context).textTheme.body1,

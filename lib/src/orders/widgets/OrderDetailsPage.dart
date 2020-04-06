@@ -9,30 +9,32 @@ import 'package:linkify/linkify.dart';
 import 'dart:convert';
 import 'package:recase/recase.dart';
 import 'package:url_launcher/url_launcher.dart';
+import 'package:woocommerceadmin/src/orders/widgets/ChangeOrderStatusModal.dart';
 import 'package:woocommerceadmin/src/products/widgets/ProductDetailsPage.dart';
 
 class OrderDetailsPage extends StatefulWidget {
+  final String baseurl;
+  final String username;
+  final String password;
   final int id;
-  OrderDetailsPage({Key key, this.id}) : super(key: key);
+
+  OrderDetailsPage(
+      {Key key,
+      @required this.baseurl,
+      @required this.username,
+      @required this.password,
+      @required this.id})
+      : super(key: key);
 
   @override
   _OrderDetailsPageState createState() => _OrderDetailsPageState();
 }
 
 class _OrderDetailsPageState extends State<OrderDetailsPage> {
-  String baseurl = "https://www.kalashcards.com";
-  String username = "ck_33c3f3430550132c2840167648ea0b3ab2d56941";
-  String password = "cs_f317f1650e418657d745eabf02e955e2c70bba46";
-
   bool isOrderDataReady = false;
   bool isError = false;
   Map orderDetails = Map();
   Map lineItemsDetails = {};
-
-  bool isOrderStatusDataReady = false;
-  bool isOrderStatusDataError = false;
-  List orderStatusDetails = [];
-  String orderStatusDataError;
 
   bool isOrderNotesDataReady = false;
   bool isOrderNotesDataError = false;
@@ -89,12 +91,13 @@ class _OrderDetailsPageState extends State<OrderDetailsPage> {
 
   Future<Null> fetchOrderDetails() async {
     String url =
-        "$baseurl/wp-json/wc/v3/orders/${widget.id}?consumer_key=$username&consumer_secret=$password";
+        "${widget.baseurl}/wp-json/wc/v3/orders/${widget.id}?consumer_key=${widget.username}&consumer_secret=${widget.password}";
+        
     setState(() {
       isOrderDataReady = false;
     });
 
-    dynamic response;
+    http.Response response;
     try {
       response = await http.get(url);
       if (response.statusCode == 200) {
@@ -143,9 +146,9 @@ class _OrderDetailsPageState extends State<OrderDetailsPage> {
 
   Future<Null> fetchLineItemsDetails(String productId) async {
     String url =
-        "$baseurl/wp-json/wc/v3/products/$productId?consumer_key=$username&consumer_secret=$password";
+        "${widget.baseurl}/wp-json/wc/v3/products/$productId?consumer_key=${widget.username}&consumer_secret=${widget.password}";
     if (isOrderDataReady) {
-      final response = await http.get(url);
+      final http.Response response = await http.get(url);
       if (response.statusCode == 200) {
         if (json.decode(response.body) is Map &&
             json.decode(response.body).containsKey("id")) {
@@ -180,64 +183,61 @@ class _OrderDetailsPageState extends State<OrderDetailsPage> {
     }
   }
 
-  Future<Null> fetchOrderStatus() async {
+  //Update Order
+  Future<Null> updateOrder(String orderStatus) async {
     String url =
-        "$baseurl/wp-json/wc/v3/reports/orders/totals?consumer_key=$username&consumer_secret=$password";
+        "${widget.baseurl}/wp-json/wc/v3/orders/${widget.id}?consumer_key=${widget.username}&consumer_secret=${widget.password}";
     setState(() {
-      isOrderStatusDataReady = false;
-      isOrderStatusDataError = false;
+      isOrderDataReady = false;
     });
 
-    dynamic response;
+    http.Response response;
     try {
-      response = await http.get(url);
-      if (response.statusCode == 200) {
-        if (json.decode(response.body) is List &&
-            json.decode(response.body).isNotEmpty) {
-          setState(() {
-            isOrderStatusDataReady = true;
-            isOrderStatusDataError = false;
-            orderStatusDetails = json.decode(response.body);
-          });
-        } else {
-          setState(() {
-            isOrderStatusDataReady = false;
-            isOrderStatusDataError = true;
-            orderStatusDataError = "Failed to fetch order status";
-          });
-        }
+      response = await http.put(url, body: {
+        "status": orderStatus
+      });
+      if (json.decode(response.body) is Map &&
+          json.decode(response.body).containsKey("id")) {
+        scaffoldKey.currentState.showSnackBar(SnackBar(
+          content: Text("Order updated successfully..."),
+          duration: Duration(seconds: 3),
+        ));
+        fetchOrderDetails();
       } else {
         String errorCode = "";
         if (json.decode(response.body) is Map &&
-            json.decode(response.body).containsKey("code") &&
-            json.decode(response.body)["code"] is String) {
+            json.decode(response.body).containsKey("code")) {
           errorCode = json.decode(response.body)["code"];
         }
+        scaffoldKey.currentState.showSnackBar(SnackBar(
+          content: Text("Failed to update order. Error: $errorCode"),
+          duration: Duration(seconds: 3),
+        ));
         setState(() {
-          isOrderStatusDataReady = false;
-          isOrderStatusDataError = true;
-          orderStatusDataError =
-              "Failed to fetch order notes. Error: $errorCode";
+          isOrderDataReady = true;
         });
       }
     } catch (e) {
+      scaffoldKey.currentState.showSnackBar(SnackBar(
+        content: Text("Failed to update order. Error: $e"),
+        duration: Duration(seconds: 3),
+      ));
       setState(() {
-        isOrderStatusDataReady = false;
-        isOrderStatusDataError = true;
-        orderStatusDataError = "Failed to fetch order notes. Error: $e";
-      });
+          isOrderDataReady = true;
+        });
     }
   }
 
+  //Order Notes Functions Below
   Future<Null> fetchOrderNotes() async {
     String url =
-        "$baseurl/wp-json/wc/v3/orders/${widget.id}/notes?consumer_key=$username&consumer_secret=$password";
+        "${widget.baseurl}/wp-json/wc/v3/orders/${widget.id}/notes?consumer_key=${widget.username}&consumer_secret=${widget.password}";
     setState(() {
       isOrderNotesDataReady = false;
       isOrderNotesDataError = false;
     });
 
-    dynamic response;
+    http.Response response;
     try {
       response = await http.get(url);
       if (response.statusCode == 200) {
@@ -281,19 +281,18 @@ class _OrderDetailsPageState extends State<OrderDetailsPage> {
   //Create Order Note
   Future<Null> addOrderNote() async {
     String url =
-        "$baseurl/wp-json/wc/v3/orders/${widget.id}/notes?consumer_key=$username&consumer_secret=$password";
+        "${widget.baseurl}/wp-json/wc/v3/orders/${widget.id}/notes?consumer_key=${widget.username}&consumer_secret=${widget.password}";
     setState(() {
       isOrderNotesDataReady = false;
       isOrderNotesDataError = false;
     });
 
-    dynamic response;
+    http.Response response;
     try {
       response = await http.post(url, body: {
         "customer_note": isCustomerNewOrderNote.toString(),
         "note": newOrderNote
       });
-      print(json.decode(response.body));
       if (json.decode(response.body) is Map &&
           json.decode(response.body).containsKey("id")) {
         scaffoldKey.currentState.showSnackBar(SnackBar(
@@ -323,14 +322,13 @@ class _OrderDetailsPageState extends State<OrderDetailsPage> {
   //Delete Order Note
   Future<Null> deleteOrderNote(orderNoteId) async {
     String url =
-        "$baseurl/wp-json/wc/v3/orders/${widget.id}/notes/$orderNoteId?force=true&consumer_key=$username&consumer_secret=$password";
-    print(url);
+        "${widget.baseurl}/wp-json/wc/v3/orders/${widget.id}/notes/$orderNoteId?force=true&consumer_key=${widget.username}&consumer_secret=${widget.password}";
     setState(() {
       isOrderNotesDataReady = false;
       isOrderNotesDataError = false;
     });
 
-    dynamic response;
+    http.Response response;
     try {
       response = await http.delete(url);
       print(json.decode(response.body));
@@ -375,7 +373,7 @@ class _OrderDetailsPageState extends State<OrderDetailsPage> {
     return mainLoadingWidget;
   }
 
-  _orderGeneralWidget() {
+  Widget _orderGeneralWidget() {
     Widget orderGeneralWidget = SizedBox.shrink();
     List<Widget> orderGeneralData = [];
     if (isOrderDataReady &&
@@ -390,7 +388,7 @@ class _OrderDetailsPageState extends State<OrderDetailsPage> {
 
       if (isOrderDataReady &&
           orderDetails.containsKey("date_created") &&
-          orderDetails["date_created"] != null) {
+          orderDetails["date_created"] is String) {
         orderGeneralData.add(Text(
           "Created: " +
               DateFormat("EEEE, d/M/y h:mm:ss a")
@@ -400,7 +398,7 @@ class _OrderDetailsPageState extends State<OrderDetailsPage> {
 
       if (isOrderDataReady &&
           orderDetails.containsKey("status") &&
-          orderDetails["status"] != null) {
+          orderDetails["status"] is String) {
         orderGeneralData.add(
           Row(
             children: <Widget>[
@@ -419,54 +417,14 @@ class _OrderDetailsPageState extends State<OrderDetailsPage> {
                       context: context,
                       barrierDismissible: false,
                       builder: (BuildContext context) {
-                        return AlertDialog(
-                          title: Text("Change Order Status"),
-                          titlePadding: EdgeInsets.fromLTRB(15, 20, 15, 0),
-                          content: SingleChildScrollView(
-                            child: isOrderStatusDataError
-                                ? Center(
-                                    child: Text(
-                                    orderStatusDataError,
-                                    style: Theme.of(context).textTheme.body1,
-                                  ))
-                                : !isOrderStatusDataReady
-                                    ? Container(
-                                        height: 100,
-                                        child: Center(
-                                          child: SpinKitFadingCube(
-                                            color:
-                                                Theme.of(context).primaryColor,
-                                            size: 30.0,
-                                          ),
-                                        ),
-                                      )
-                                    : ListView.builder(
-                                        itemCount: orderStatusDetails.length,
-                                        itemBuilder:
-                                            (BuildContext context, int index) {
-                                          return Row(
-                                            children: <Widget>[
-                                              Text(orderStatusDetails[index]
-                                                  ["name"])
-                                            ],
-                                          );
-                                        }),
-                          ),
-                          contentPadding: EdgeInsets.fromLTRB(15, 10, 15, 0),
-                          actions: <Widget>[
-                            FlatButton(
-                              child: Text("Cancel"),
-                              onPressed: () {
-                                Navigator.of(context).pop();
-                              },
-                            ),
-                            FlatButton(
-                              child: Text("Apply"),
-                              onPressed: () {
-                                Navigator.of(context).pop();
-                              },
-                            )
-                          ],
+                        return ChangeOrderStatusModal(
+                          baseurl: widget.baseurl,
+                          username: widget.username,
+                          password: widget.password,
+                          orderStatus: orderDetails["status"],
+                          onSubmit: (String newOrderStatus) {
+                            updateOrder(newOrderStatus);
+                          },
                         );
                       });
                 },
@@ -501,14 +459,14 @@ class _OrderDetailsPageState extends State<OrderDetailsPage> {
     return orderGeneralWidget;
   }
 
-  _orderProductsWidget() {
+  Widget _orderProductsWidget() {
     Widget orderProductsWidget = SizedBox.shrink();
     List<Widget> orderProductsCardData = [];
 
     if (isOrderDataReady &&
         orderDetails.containsKey("line_items") &&
-        orderDetails["line_items"] != null &&
-        orderDetails["line_items"].length > 0) {
+        orderDetails["line_items"] is List &&
+        orderDetails["line_items"].isNotEmpty) {
       for (int i = 0; i < orderDetails["line_items"].length; i++) {
         List<Widget> orderProductsData = [];
         Widget lineItemsPrimaryImage = SizedBox(
@@ -539,7 +497,8 @@ class _OrderDetailsPageState extends State<OrderDetailsPage> {
         }
 
         if (orderDetails["line_items"][i].containsKey("name") &&
-            orderDetails["line_items"][i]["name"] != null) {
+            orderDetails["line_items"][i]["name"] is String &&
+            orderDetails["line_items"][i]["name"].toString().isNotEmpty) {
           orderProductsData.add(Text(
             "${orderDetails["line_items"][i]["name"]}",
             style: Theme.of(context)
@@ -550,26 +509,26 @@ class _OrderDetailsPageState extends State<OrderDetailsPage> {
         }
 
         if (orderDetails["line_items"][i].containsKey("sku") &&
-            orderDetails["line_items"][i]["sku"] != null) {
+            orderDetails["line_items"][i]["sku"] is String) {
           orderProductsData
               .add(Text("SKU: ${orderDetails["line_items"][i]["sku"]}"));
         }
 
         if (orderDetails["line_items"][i].containsKey("price") &&
-            orderDetails["line_items"][i]["price"] != null) {
+            orderDetails["line_items"][i]["price"] is String) {
           orderProductsData
               .add(Text("Price: ${orderDetails["line_items"][i]["price"]}"));
         }
 
         if (orderDetails["line_items"][i].containsKey("quantity") &&
-            orderDetails["line_items"][i]["quantity"] != null) {
+            orderDetails["line_items"][i]["quantity"] is int) {
           orderProductsData
               .add(Text("Qty: ${orderDetails["line_items"][i]["quantity"]}"));
         }
 
         if (orderDetails["line_items"][i].containsKey("meta_data") &&
-            orderDetails["line_items"][i]["meta_data"] != null &&
-            orderDetails["line_items"][i]["meta_data"].length > 0) {
+            orderDetails["line_items"][i]["meta_data"] is List &&
+            orderDetails["line_items"][i]["meta_data"].isNotEmpty) {
           for (int metaDataIndex = 0;
               metaDataIndex < orderDetails["line_items"][i]["meta_data"].length;
               metaDataIndex++) {
@@ -594,11 +553,14 @@ class _OrderDetailsPageState extends State<OrderDetailsPage> {
           child: InkWell(
             onTap: () {
               if (orderDetails["line_items"][i].containsKey("product_id") &&
-                  orderDetails["line_items"][i]["product_id"] != null) {
+                  orderDetails["line_items"][i]["product_id"] is int) {
                 Navigator.push(
                   context,
                   MaterialPageRoute(
                       builder: (context) => ProductDetailsPage(
+                            baseurl: widget.baseurl,
+                            username: widget.username,
+                            password: widget.password,
                             id: orderDetails["line_items"][i]["product_id"],
                           )),
                 );
@@ -646,7 +608,7 @@ class _OrderDetailsPageState extends State<OrderDetailsPage> {
     return orderProductsWidget;
   }
 
-  _orderPaymentWidget() {
+  Widget _orderPaymentWidget() {
     Widget orderPaymentWidget = SizedBox.shrink();
     List<Widget> orderPaymentData = [];
     if (isOrderDataReady &&
@@ -655,12 +617,15 @@ class _OrderDetailsPageState extends State<OrderDetailsPage> {
             orderDetails.containsKey("shipping_total") ||
             orderDetails.containsKey("total_tax"))) {
       if (orderDetails.containsKey("payment_method_title") &&
-          orderDetails["payment_method_title"] != null) {
+          orderDetails["payment_method_title"] is String &&
+          orderDetails["payment_method_title"].isNotEmpty) {
         orderPaymentData.add(
             Text("Payment Gateway: ${orderDetails["payment_method_title"]}"));
       }
 
-      if (orderDetails.containsKey("total") && orderDetails["total"] != null) {
+      if (orderDetails.containsKey("total") &&
+          orderDetails["total"] is String &&
+          orderDetails["total"].isNotEmpty) {
         orderPaymentData.add(
           Text(
             "Order Total: ${orderDetails["total"]}",
@@ -673,7 +638,8 @@ class _OrderDetailsPageState extends State<OrderDetailsPage> {
       }
 
       if (orderDetails.containsKey("total_tax") &&
-          orderDetails["total_tax"] != null) {
+          orderDetails["total_tax"] is String &&
+          orderDetails["total_tax"].isNotEmpty) {
         orderPaymentData.add(Text("Taxes: " + orderDetails["total_tax"]));
       }
 
@@ -702,7 +668,7 @@ class _OrderDetailsPageState extends State<OrderDetailsPage> {
     return orderPaymentWidget;
   }
 
-  _orderShippingWidget() {
+  Widget _orderShippingWidget() {
     Widget orderShippingWidget = SizedBox.shrink();
     List<Widget> orderShippingData = [];
     String shippingName = "";
@@ -713,12 +679,12 @@ class _OrderDetailsPageState extends State<OrderDetailsPage> {
         orderDetails["shipping"] is Map) {
       if (orderDetails["shipping"].containsKey("first_name") &&
           orderDetails["shipping"]["first_name"] is String &&
-          orderDetails["shipping"]["first_name"].toString().isNotEmpty) {
+          orderDetails["shipping"]["first_name"].isNotEmpty) {
         shippingName += orderDetails["shipping"]["first_name"];
       }
       if (orderDetails["shipping"].containsKey("last_name") &&
           orderDetails["shipping"]["last_name"] is String &&
-          orderDetails["shipping"]["last_name"].toString().isNotEmpty) {
+          orderDetails["shipping"]["last_name"].isNotEmpty) {
         shippingName += " ${orderDetails["shipping"]["last_name"]}";
       }
       if (shippingName.isNotEmpty) {
@@ -733,37 +699,37 @@ class _OrderDetailsPageState extends State<OrderDetailsPage> {
 
       if (orderDetails["shipping"].containsKey("address_1") &&
           orderDetails["shipping"]["address_1"] is String &&
-          orderDetails["shipping"]["address_1"].toString().isNotEmpty) {
+          orderDetails["shipping"]["address_1"].isNotEmpty) {
         shippingAddress = orderDetails["shipping"]["address_1"].toString();
       }
 
       if (orderDetails["shipping"].containsKey("address_2") &&
           orderDetails["shipping"]["address_2"] is String &&
-          orderDetails["shipping"]["address_2"].toString().isNotEmpty) {
+          orderDetails["shipping"]["address_2"].isNotEmpty) {
         shippingAddress += " ${orderDetails["shipping"]["address_2"]}";
       }
 
       if (orderDetails["shipping"].containsKey("city") &&
           orderDetails["shipping"]["city"] is String &&
-          orderDetails["shipping"]["city"].toString().isNotEmpty) {
+          orderDetails["shipping"]["city"].isNotEmpty) {
         shippingAddress += " ${orderDetails["shipping"]["city"]}";
       }
 
       if (orderDetails["shipping"].containsKey("state") &&
           orderDetails["shipping"]["state"] is String &&
-          orderDetails["shipping"]["state"].toString().isNotEmpty) {
+          orderDetails["shipping"]["state"].isNotEmpty) {
         shippingAddress += " ${orderDetails["shipping"]["state"]}";
       }
 
       if (orderDetails["shipping"].containsKey("postcode") &&
           orderDetails["shipping"]["postcode"] is String &&
-          orderDetails["shipping"]["postcode"].toString().isNotEmpty) {
+          orderDetails["shipping"]["postcode"].isNotEmpty) {
         shippingAddress += " ${orderDetails["shipping"]["postcode"]}";
       }
 
       if (orderDetails["shipping"].containsKey("country") &&
           orderDetails["shipping"]["country"] is String &&
-          orderDetails["shipping"]["country"].toString().isNotEmpty) {
+          orderDetails["shipping"]["country"].isNotEmpty) {
         shippingAddress += " ${orderDetails["shipping"]["country"]}";
       }
 
@@ -805,7 +771,7 @@ class _OrderDetailsPageState extends State<OrderDetailsPage> {
     return orderShippingWidget;
   }
 
-  _orderBillingWidget() {
+  Widget _orderBillingWidget() {
     Widget orderBillingWidget = SizedBox.shrink();
     List<Widget> orderBillingWidgetData = [];
     String billingName = "";
@@ -816,12 +782,12 @@ class _OrderDetailsPageState extends State<OrderDetailsPage> {
         orderDetails["billing"] != null) {
       if (orderDetails["billing"].containsKey("first_name") &&
           orderDetails["billing"]["first_name"] is String &&
-          orderDetails["billing"]["first_name"].toString().isNotEmpty) {
+          orderDetails["billing"]["first_name"].isNotEmpty) {
         billingName += orderDetails["billing"]["first_name"];
       }
       if (orderDetails["billing"].containsKey("last_name") &&
           orderDetails["billing"]["last_name"] is String &&
-          orderDetails["billing"]["last_name"].toString().isNotEmpty) {
+          orderDetails["billing"]["last_name"].isNotEmpty) {
         billingName += " ${orderDetails["billing"]["last_name"]}";
       }
       if (billingName.isNotEmpty) {
@@ -836,7 +802,7 @@ class _OrderDetailsPageState extends State<OrderDetailsPage> {
 
       if (orderDetails["billing"].containsKey("phone") &&
           orderDetails["billing"]["phone"] is String &&
-          orderDetails["billing"]["phone"].toString().isNotEmpty) {
+          orderDetails["billing"]["phone"].isNotEmpty) {
         orderBillingWidgetData.add(RichText(
             text: TextSpan(
                 text: "Phone: ",
@@ -855,7 +821,7 @@ class _OrderDetailsPageState extends State<OrderDetailsPage> {
 
       if (orderDetails["billing"].containsKey("email") &&
           orderDetails["billing"]["email"] is String &&
-          orderDetails["billing"]["email"].toString().isNotEmpty) {
+          orderDetails["billing"]["email"].isNotEmpty) {
         orderBillingWidgetData.add(RichText(
             text: TextSpan(
                 text: "Email: ",
@@ -874,37 +840,37 @@ class _OrderDetailsPageState extends State<OrderDetailsPage> {
 
       if (orderDetails["billing"].containsKey("address_1") &&
           orderDetails["billing"]["address_1"] is String &&
-          orderDetails["billing"]["address_1"].toString().isNotEmpty) {
+          orderDetails["billing"]["address_1"].isNotEmpty) {
         billingAddress = orderDetails["billing"]["address_1"].toString();
       }
 
       if (orderDetails["billing"].containsKey("address_2") &&
           orderDetails["billing"]["address_2"] is String &&
-          orderDetails["billing"]["address_2"].toString().isNotEmpty) {
+          orderDetails["billing"]["address_2"].isNotEmpty) {
         billingAddress += " ${orderDetails["billing"]["address_2"]}";
       }
 
       if (orderDetails["billing"].containsKey("city") &&
           orderDetails["billing"]["city"] is String &&
-          orderDetails["billing"]["city"].toString().isNotEmpty) {
+          orderDetails["billing"]["city"].isNotEmpty) {
         billingAddress += " ${orderDetails["billing"]["city"]}";
       }
 
       if (orderDetails["billing"].containsKey("state") &&
           orderDetails["billing"]["state"] is String &&
-          orderDetails["billing"]["state"].toString().isNotEmpty) {
+          orderDetails["billing"]["state"].isNotEmpty) {
         billingAddress += " ${orderDetails["billing"]["state"]}";
       }
 
       if (orderDetails["billing"].containsKey("postcode") &&
           orderDetails["billing"]["postcode"] is String &&
-          orderDetails["billing"]["postcode"].toString().isNotEmpty) {
+          orderDetails["billing"]["postcode"].isNotEmpty) {
         billingAddress += " ${orderDetails["billing"]["postcode"]}";
       }
 
       if (orderDetails["billing"].containsKey("country") &&
           orderDetails["billing"]["country"] is String &&
-          orderDetails["billing"]["country"].toString().isNotEmpty) {
+          orderDetails["billing"]["country"].isNotEmpty) {
         billingAddress += " ${orderDetails["billing"]["country"]}";
       }
 

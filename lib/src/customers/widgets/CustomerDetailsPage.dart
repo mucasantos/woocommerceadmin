@@ -9,17 +9,24 @@ import 'package:intl/intl.dart';
 import 'package:url_launcher/url_launcher.dart';
 
 class CustomerDetailsPage extends StatefulWidget {
+  final String baseurl;
+  final String username;
+  final String password;
   final int id;
-  CustomerDetailsPage({Key key, this.id}) : super(key: key);
+
+  CustomerDetailsPage(
+      {Key key,
+      @required this.baseurl,
+      @required this.username,
+      @required this.password,
+      @required this.id})
+      : super(key: key);
 
   @override
   _CustomerDetailsPageState createState() => _CustomerDetailsPageState();
 }
 
 class _CustomerDetailsPageState extends State<CustomerDetailsPage> {
-  String baseurl = "https://www.kalashcards.com";
-  String username = "ck_33c3f3430550132c2840167648ea0b3ab2d56941";
-  String password = "cs_f317f1650e418657d745eabf02e955e2c70bba46";
   Map customerData = Map();
   bool isCustomerDataReady = false;
   bool isCustomerDataError = false;
@@ -71,12 +78,11 @@ class _CustomerDetailsPageState extends State<CustomerDetailsPage> {
               ),
             ),
     );
-    Container();
   }
 
   Future<Null> fetchCustomerDetails() async {
     String url =
-        "$baseurl/wp-json/wc/v3/customers/${widget.id}?consumer_key=$username&consumer_secret=$password";
+        "${widget.baseurl}/wp-json/wc/v3/customers/${widget.id}?consumer_key=${widget.username}&consumer_secret=${widget.password}";
     setState(() {
       isCustomerDataError = false;
       isCustomerDataReady = false;

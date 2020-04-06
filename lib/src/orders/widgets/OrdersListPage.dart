@@ -1,25 +1,44 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_spinkit/flutter_spinkit.dart';
 import 'package:http/http.dart' as http;
 import 'package:intl/intl.dart';
 import 'dart:convert';
 import 'package:recase/recase.dart';
 import 'package:woocommerceadmin/src/orders/widgets/OrderDetailsPage.dart';
+import 'package:barcode_scan/barcode_scan.dart';
+import 'package:woocommerceadmin/src/orders/widgets/OrdersListFiltersModal.dart';
 
 class OrdersListPage extends StatefulWidget {
+  final String baseurl;
+  final String username;
+  final String password;
+
+  OrdersListPage({
+    Key key,
+    @required this.baseurl,
+    @required this.username,
+    @required this.password,
+  }) : super(key: key);
+
   @override
   _OrdersListPageState createState() => _OrdersListPageState();
 }
 
 class _OrdersListPageState extends State<OrdersListPage> {
-  String baseurl = "https://www.kalashcards.com";
-  String username = "ck_33c3f3430550132c2840167648ea0b3ab2d56941";
-  String password = "cs_f317f1650e418657d745eabf02e955e2c70bba46";
   List ordersListData = List();
   int page = 1;
   bool hasMoreToLoad = true;
   bool isListLoading = false;
 
+  bool isSearching = false;
+  String searchValue = "";
+
+  String sortOrderByValue = "date";
+  String sortOrderValue = "desc";
+  Map<String, bool> orderStatusOptions = {};
+
+  final scaffoldKey = new GlobalKey<ScaffoldState>();
   final GlobalKey<RefreshIndicatorState> _refreshIndicatorKey =
       new GlobalKey<RefreshIndicatorState>();
 
@@ -32,9 +51,8 @@ class _OrdersListPageState extends State<OrdersListPage> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(
-        title: Text("Orders List"),
-      ),
+      key: scaffoldKey,
+      appBar: _myAppBar(),
       body: RefreshIndicator(
         key: _refreshIndicatorKey,
         onRefresh: handleRefresh,
@@ -59,9 +77,13 @@ class _OrdersListPageState extends State<OrdersListPage> {
                             Navigator.push(
                               context,
                               MaterialPageRoute(
-                                  builder: (context) => OrderDetailsPage(
-                                        id: ordersListData[index]["id"],
-                                      )),
+                                builder: (context) => OrderDetailsPage(
+                                  baseurl: widget.baseurl,
+                                  username: widget.username,
+                                  password: widget.password,
+                                  id: ordersListData[index]["id"],
+                                ),
+                              ),
                             );
                           },
                           child: Row(
@@ -109,9 +131,25 @@ class _OrdersListPageState extends State<OrdersListPage> {
     );
   }
 
-  fetchOrdersList() async {
+  Future<void> fetchOrdersList() async {
     String url =
-        "$baseurl/wp-json/wc/v3/orders?page=$page&per_page=20&consumer_key=$username&consumer_secret=$password";
+        "${widget.baseurl}/wp-json/wc/v3/orders?page=$page&per_page=20&consumer_key=${widget.username}&consumer_secret=${widget.password}";
+    if (searchValue is String && searchValue.isNotEmpty) {
+      url += "&search=$searchValue";
+    }
+    if (sortOrderByValue is String && sortOrderByValue.isNotEmpty) {
+      url += "&orderby=$sortOrderByValue";
+    }
+    if (sortOrderValue is String && sortOrderValue.isNotEmpty) {
+      url += "&order=$sortOrderValue";
+    }
+    if (orderStatusOptions is Map && orderStatusOptions.isNotEmpty) {
+      orderStatusOptions.forEach((k, v) {
+        if (v) {
+          url += "&status[]=$k";
+        }
+      });
+    }
     setState(() {
       isListLoading = true;
     });
@@ -139,7 +177,7 @@ class _OrdersListPageState extends State<OrdersListPage> {
     }
   }
 
-  handleLoadMore() async {
+  Future<void> handleLoadMore() async {
     setState(() {
       page++;
     });
@@ -152,6 +190,175 @@ class _OrdersListPageState extends State<OrdersListPage> {
       ordersListData = [];
     });
     await fetchOrdersList();
+  }
+
+  Future<void> scanBarcode() async {
+    try {
+      String barcode = await BarcodeScanner.scan();
+      setState(() {
+        searchValue = barcode;
+      });
+      handleRefresh();
+    } on PlatformException catch (e) {
+      if (e.code == BarcodeScanner.CameraAccessDenied) {
+        scaffoldKey.currentState.showSnackBar(SnackBar(
+          content: Text("Camera permission is not granted"),
+          duration: Duration(seconds: 3),
+        ));
+      } else {
+        scaffoldKey.currentState.showSnackBar(SnackBar(
+          content: Text("Unknown barcode scan error: $e"),
+          duration: Duration(seconds: 3),
+        ));
+      }
+    } on FormatException {
+      scaffoldKey.currentState.showSnackBar(SnackBar(
+        content: Text("Barcode scan cancelled"),
+        duration: Duration(seconds: 3),
+      ));
+    } catch (e) {
+      scaffoldKey.currentState.showSnackBar(SnackBar(
+        content: Text("Unknown barcode scan error: $e"),
+        duration: Duration(seconds: 3),
+      ));
+    }
+  }
+
+  Widget _myAppBar() {
+    Widget myAppBar;
+
+    if (isSearching) {
+      myAppBar = AppBar(
+        title: Row(
+          children: <Widget>[
+            Padding(
+              padding: const EdgeInsets.only(right: 10),
+              child: Icon(Icons.search),
+            ),
+            Expanded(
+              child: TextField(
+                controller: TextEditingController(text: searchValue),
+                style: TextStyle(color: Colors.white),
+                textInputAction: TextInputAction.search,
+                decoration: InputDecoration(
+                  border: InputBorder.none,
+                  hintText: "Search Orders",
+                  hintStyle: TextStyle(
+                    color: Color.fromRGBO(255, 255, 255, 0.6),
+                  ),
+                ),
+                cursorColor: Colors.white,
+                onSubmitted: (String value) {
+                  setState(() {
+                    searchValue = value;
+                  });
+                  handleRefresh();
+                },
+              ),
+            ),
+            GestureDetector(
+              child: Padding(
+                padding: const EdgeInsets.only(left: 10),
+                child: Icon(Icons.center_focus_strong),
+              ),
+              onTap: scanBarcode,
+            ),
+            GestureDetector(
+              child: Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 10),
+                child: Icon(Icons.filter_list),
+              ),
+              onTap: () {
+                showDialog(
+                  context: context,
+                  barrierDismissible: false,
+                  builder: (BuildContext context) {
+                    return OrdersListFiltersModal(
+                      baseurl: widget.baseurl,
+                      username: widget.username,
+                      password: widget.password,
+                      sortOrderByValue: sortOrderByValue,
+                      sortOrderValue: sortOrderValue,
+                      orderStatusOptions: orderStatusOptions,
+                      onSubmit: (sortOrderByValue, sortOrderValue,
+                          orderStatusOptions) {
+                        setState(() {
+                          this.sortOrderByValue = sortOrderByValue;
+                          this.sortOrderValue = sortOrderValue;
+                          this.orderStatusOptions = orderStatusOptions;
+                        });
+                        handleRefresh();
+                      },
+                    );
+                  },
+                );
+              },
+            ),
+            GestureDetector(
+              child: Padding(
+                padding: const EdgeInsets.only(right: 10),
+                child: Icon(Icons.close),
+              ),
+              onTap: () {
+                setState(() {
+                  isSearching = !isSearching;
+                  searchValue = "";
+                });
+                handleRefresh();
+              },
+            ),
+          ],
+        ),
+      );
+    } else {
+      myAppBar = AppBar(
+        title: Text("Orders List"),
+        actions: <Widget>[
+          GestureDetector(
+            child: Padding(
+              padding: const EdgeInsets.only(left: 10),
+              child: Icon(Icons.search),
+            ),
+            onTap: () {
+              setState(() {
+                isSearching = !isSearching;
+              });
+            },
+          ),
+          GestureDetector(
+            child: Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 10),
+              child: Icon(Icons.filter_list),
+            ),
+            onTap: () {
+              showDialog(
+                  context: context,
+                  barrierDismissible: false,
+                  builder: (BuildContext context) {
+                    return OrdersListFiltersModal(
+                      baseurl: widget.baseurl,
+                      username: widget.username,
+                      password: widget.password,
+                      sortOrderByValue: sortOrderByValue,
+                      sortOrderValue: sortOrderValue,
+                      orderStatusOptions: orderStatusOptions,
+                      onSubmit: (sortOrderByValue, sortOrderValue,
+                          orderStatusOptions) {
+                        setState(() {
+                          this.sortOrderByValue = sortOrderByValue;
+                          this.sortOrderValue = sortOrderValue;
+                          this.orderStatusOptions = orderStatusOptions;
+                        });
+                        handleRefresh();
+                      },
+                    );
+                  });
+            },
+          ),
+        ],
+      );
+    }
+    return myAppBar;
   }
 
   Widget _orderDate(Map orderDetailsMap) {

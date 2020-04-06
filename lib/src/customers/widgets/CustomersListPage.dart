@@ -6,14 +6,22 @@ import 'package:intl/intl.dart';
 import 'package:woocommerceadmin/src/customers/widgets/CustomerDetailsPage.dart';
 
 class CustomersListPage extends StatefulWidget {
+  final String baseurl;
+  final String username;
+  final String password;
+
+  CustomersListPage({
+    Key key,
+    @required this.baseurl,
+    @required this.username,
+    @required this.password,
+  }) : super(key: key);
+
   @override
   _CustomersListPageState createState() => _CustomersListPageState();
 }
 
 class _CustomersListPageState extends State<CustomersListPage> {
-  String baseurl = "https://www.kalashcards.com";
-  String username = "ck_33c3f3430550132c2840167648ea0b3ab2d56941";
-  String password = "cs_f317f1650e418657d745eabf02e955e2c70bba46";
   List customersListData = [];
   int page = 1;
   bool hasMoreToLoad = true;
@@ -59,6 +67,9 @@ class _CustomersListPageState extends State<CustomersListPage> {
                               context,
                               MaterialPageRoute(
                                 builder: (context) => CustomerDetailsPage(
+                                    baseurl: widget.baseurl,
+                                    username: widget.username,
+                                    password: widget.password,
                                     id: customersListData[index]["id"]),
                               ),
                             );
@@ -116,7 +127,7 @@ class _CustomersListPageState extends State<CustomersListPage> {
 
   fetchCustomersList() async {
     String url =
-        "$baseurl/wp-json/wc/v3/customers?page=$page&per_page=20&order=desc&orderby=registered_date&consumer_key=$username&consumer_secret=$password";
+        "${widget.baseurl}/wp-json/wc/v3/customers?page=$page&per_page=20&order=desc&orderby=registered_date&consumer_key=${widget.username}&consumer_secret=${widget.password}";
     setState(() {
       isListLoading = true;
     });

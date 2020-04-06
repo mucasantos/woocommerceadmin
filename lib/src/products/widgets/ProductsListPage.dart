@@ -6,14 +6,21 @@ import 'package:woocommerceadmin/src/config.dart';
 import 'package:woocommerceadmin/src/products/widgets/ProductDetailsPage.dart';
 
 class ProductsListPage extends StatefulWidget {
+  final String baseurl;
+  final String username;
+  final String password;
+  ProductsListPage({
+    Key key,
+    @required this.baseurl,
+    @required this.username,
+    @required this.password,
+  }) : super(key: key);
+
   @override
   _ProductsListPageState createState() => _ProductsListPageState();
 }
 
 class _ProductsListPageState extends State<ProductsListPage> {
-  String baseurl = "https://www.kalashcards.com";
-  String username = "ck_33c3f3430550132c2840167648ea0b3ab2d56941";
-  String password = "cs_f317f1650e418657d745eabf02e955e2c70bba46";
   List productsListData = [];
   int page = 1;
   bool hasMoreToLoad = true;
@@ -58,9 +65,13 @@ class _ProductsListPageState extends State<ProductsListPage> {
                             Navigator.push(
                               context,
                               MaterialPageRoute(
-                                  builder: (context) => ProductDetailsPage(
-                                        id: productsListData[index]["id"],
-                                      )),
+                                builder: (context) => ProductDetailsPage(
+                                  baseurl: widget.baseurl,
+                                  username: widget.username,
+                                  password: widget.password,
+                                  id: productsListData[index]["id"],
+                                ),
+                              ),
                             );
                           },
                           child: Row(
@@ -177,9 +188,9 @@ class _ProductsListPageState extends State<ProductsListPage> {
     );
   }
 
-  fetchProductsList() async {
+  Future<void> fetchProductsList() async {
     String url =
-        "$baseurl/wp-json/wc/v3/products?page=$page&per_page=20&consumer_key=$username&consumer_secret=$password";
+        "${widget.baseurl}/wp-json/wc/v3/products?page=$page&per_page=20&consumer_key=${widget.username}&consumer_secret=${widget.password}";
     setState(() {
       isListLoading = true;
     });

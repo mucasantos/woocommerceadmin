@@ -7,18 +7,23 @@ import 'package:http/http.dart' as http;
 import 'package:recase/recase.dart';
 
 class EditProductPage extends StatefulWidget {
+  final String baseurl;
+  final String username;
+  final String password;
   final int id;
-  EditProductPage({Key key, this.id}) : super(key: key);
+  EditProductPage(
+      {Key key,
+      @required this.baseurl,
+      @required this.username,
+      @required this.password,
+      @required this.id})
+      : super(key: key);
 
   @override
   _EditProductPageState createState() => _EditProductPageState();
 }
 
 class _EditProductPageState extends State<EditProductPage> {
-  String baseurl = "https://www.kalashcards.com";
-  String username = "ck_33c3f3430550132c2840167648ea0b3ab2d56941";
-  String password = "cs_f317f1650e418657d745eabf02e955e2c70bba46";
-
   final scaffoldKey = new GlobalKey<ScaffoldState>();
 
   bool isProductDataReady = false;
@@ -87,7 +92,7 @@ class _EditProductPageState extends State<EditProductPage> {
 
   fetchProductDetails() async {
     String url =
-        "$baseurl/wp-json/wc/v3/products/${widget.id}?consumer_key=$username&consumer_secret=$password";
+        "${widget.baseurl}/wp-json/wc/v3/products/${widget.id}?consumer_key=${widget.username}&consumer_secret=${widget.password}";
     setState(() {
       isProductDataReady = false;
       isError = false;
@@ -324,7 +329,7 @@ class _EditProductPageState extends State<EditProductPage> {
       }
     }
     String url =
-        "$baseurl/wp-json/wc/v3/products/${widget.id}?consumer_key=$username&consumer_secret=$password";
+        "${widget.baseurl}/wp-json/wc/v3/products/${widget.id}?consumer_key=${widget.username}&consumer_secret=${widget.password}";
     dynamic response;
     try {
       response = await http.put(
@@ -387,7 +392,7 @@ class _EditProductPageState extends State<EditProductPage> {
     if (isProductDataReady) {
       List<Widget> productGeneralData = [];
       productGeneralData.add(TextFormField(
-        initialValue: name,
+        initialValue: name is String ? name : "",
         decoration: InputDecoration(labelText: "Name"),
         onChanged: (value) {
           setState(() {
@@ -397,7 +402,7 @@ class _EditProductPageState extends State<EditProductPage> {
       ));
 
       productGeneralData.add(TextFormField(
-        initialValue: sku,
+        initialValue: sku is String ? sku : null,
         decoration: InputDecoration(labelText: "SKU"),
         onChanged: (value) {
           setState(() {
@@ -496,7 +501,7 @@ class _EditProductPageState extends State<EditProductPage> {
       List<Widget> productPricingData = [];
 
       productPricingData.add(TextFormField(
-        initialValue: regularPrice,
+        initialValue: regularPrice is String ? regularPrice : "",
         keyboardType: TextInputType.number,
         inputFormatters: [
           WhitelistingTextInputFormatter(RegExp(r"^\d*\.?\d*"))
@@ -512,7 +517,7 @@ class _EditProductPageState extends State<EditProductPage> {
       ));
 
       productPricingData.add(TextFormField(
-        initialValue: salePrice,
+        initialValue: salePrice is String ? salePrice : "",
         keyboardType: TextInputType.number,
         inputFormatters: [
           WhitelistingTextInputFormatter(RegExp(r"^\d*\.?\d*"))
@@ -640,7 +645,7 @@ class _EditProductPageState extends State<EditProductPage> {
                     stockStatus = newValue;
                   });
                 },
-                items: <String>['instock', 'outofstock', 'onbackorder']
+                items: <String>["instock", "outofstock", "onbackorder"]
                     .map<DropdownMenuItem<String>>((String value) {
                   return DropdownMenuItem<String>(
                     value: value,
@@ -675,9 +680,13 @@ class _EditProductPageState extends State<EditProductPage> {
         ));
       }
 
+      if (stockStatus == "outofstock") {
+        manageStock = false;
+      }
+
       if (stockStatus == "instock" && manageStock) {
         productInventoryData.add(TextFormField(
-          initialValue: "$stockQuantity",
+          initialValue: stockQuantity is int ? "$stockQuantity" : "",
           keyboardType: TextInputType.number,
           inputFormatters: [WhitelistingTextInputFormatter.digitsOnly],
           decoration: InputDecoration(labelText: "Stock Quantity"),
@@ -722,7 +731,7 @@ class _EditProductPageState extends State<EditProductPage> {
       List<Widget> productWidgetData = [];
 
       productWidgetData.add(TextFormField(
-        initialValue: weight,
+        initialValue: weight is String ? weight : "",
         keyboardType: TextInputType.number,
         inputFormatters: [
           WhitelistingTextInputFormatter(RegExp(r"^\d*\.?\d*"))
@@ -741,7 +750,7 @@ class _EditProductPageState extends State<EditProductPage> {
             child: Padding(
               padding: const EdgeInsets.fromLTRB(10, 0, 10, 0),
               child: TextFormField(
-                  initialValue: length,
+                  initialValue: length is String ? length : "",
                   keyboardType: TextInputType.number,
                   inputFormatters: [
                     WhitelistingTextInputFormatter(RegExp(r"^\d*\.?\d*"))
@@ -758,7 +767,7 @@ class _EditProductPageState extends State<EditProductPage> {
             child: Padding(
               padding: const EdgeInsets.fromLTRB(10, 0, 10, 0),
               child: TextFormField(
-                  initialValue: width,
+                  initialValue: width is String ? width : "",
                   keyboardType: TextInputType.number,
                   inputFormatters: [
                     WhitelistingTextInputFormatter(RegExp(r"^\d*\.?\d*"))
@@ -775,7 +784,7 @@ class _EditProductPageState extends State<EditProductPage> {
             child: Padding(
               padding: const EdgeInsets.fromLTRB(10, 0, 10, 0),
               child: TextFormField(
-                  initialValue: height,
+                  initialValue: height is String ? height : "",
                   keyboardType: TextInputType.number,
                   inputFormatters: [
                     WhitelistingTextInputFormatter(RegExp(r"^\d*\.?\d*"))
