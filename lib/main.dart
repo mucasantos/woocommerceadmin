@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 import 'package:woocommerceadmin/src/common/widgets/MyDrawer.dart';
 import 'package:woocommerceadmin/src/connections/widgets/AddConnectionPage.dart';
 import 'package:woocommerceadmin/src/customers/widgets/CustomersListPage.dart';
@@ -8,6 +9,7 @@ import 'package:woocommerceadmin/src/orders/widgets/OrdersListPage.dart';
 import 'package:woocommerceadmin/src/products/widgets/ProductsListPage.dart';
 import 'package:woocommerceadmin/src/reports/widgets/ReportsPage.dart';
 import 'package:woocommerceadmin/src/config.dart';
+import 'package:flutter_spinkit/flutter_spinkit.dart';
 
 void main() => runApp(MyApp());
 
@@ -31,7 +33,10 @@ class MyApp extends StatelessWidget {
               fontWeight: FontWeight.bold,
             ),
             body1: TextStyle(
-              fontSize: 14.0,
+              fontSize: 14,
+            ),
+            body2: TextStyle(
+              fontSize: 16,
             ),
             button: TextStyle(
               color: Colors.white,
@@ -39,77 +44,143 @@ class MyApp extends StatelessWidget {
               fontSize: 16,
             )),
       ),
-      home: MyBottomNavigator(),
+      home: HomePage(),
     );
   }
 }
 
-class MyBottomNavigator extends StatefulWidget {
-  final _MyBottomNavigatorState _myBottomNavigatorState  = _MyBottomNavigatorState();
+class HomePage extends StatefulWidget {
+  HomePage();
+
+  final _HomePageState _homePageState = _HomePageState();
 
   @override
-  _MyBottomNavigatorState createState() => _myBottomNavigatorState;
-  
-  Future<void> getInitialConnection() async{
-    await _myBottomNavigatorState.getInitialConnection();
+  _HomePageState createState() => _homePageState;
+
+  Future<void> setSelectedConnection() async {
+    await _homePageState.setSelectedConnection();
   }
 }
 
-class _MyBottomNavigatorState extends State<MyBottomNavigator> {
-  int _selectedIndex = 0;
-  Connection selectedConnection;
+class _HomePageState extends State<HomePage> {
+  int _selectedConnectionId = -1;
+  bool _isSelectedConnectionReady = false;
+  Connection _selectedConnection;
+
+  int _selectedBottomNavigationIndex = 0;
   List<Widget> _children = [];
 
   @override
   void initState() {
     super.initState();
-    getInitialConnection();
+    setSelectedConnection();
+  }
+
+  @override
+  void setState(fn) {
+    if (mounted) {
+      super.setState(fn);
+    }
   }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-        appBar: myAppBar(),
-        drawer: MyDrawer(),
-        body: myBody(),
-        bottomNavigationBar: myBottomNavigation());
+      appBar: myAppBar(),
+      drawer: MyDrawer(),
+      body: myBody(),
+      bottomNavigationBar: myBottomNavigation(),
+    );
   }
 
-  Future<void> getInitialConnection() async {
+  Future<void> setSelectedConnection() async {
+    SharedPreferences prefs = await SharedPreferences.getInstance();
+
+    int selectedConnectionId;
+    try {
+      selectedConnectionId = prefs.getInt("selectedConnectionId");
+    } catch (e) {
+      selectedConnectionId = -1;
+      _isSelectedConnectionReady = true;
+    }
+
     List<Connection> connectionList =
         await ConnectionDBProvider.db.getAllConnections();
-    if (connectionList.length > 0) {
-      selectedConnection = connectionList[0];
-      setState(() {
-        _children = [
-          ReportsPage(
-            baseurl: selectedConnection.baseurl,
-            username: selectedConnection.username,
-            password: selectedConnection.password,
-          ),
-          OrdersListPage(
-            baseurl: selectedConnection.baseurl,
-            username: selectedConnection.username,
-            password: selectedConnection.password,
-          ),
-          ProductsListPage(
-            baseurl: selectedConnection.baseurl,
-            username: selectedConnection.username,
-            password: selectedConnection.password,
-          ),
-          CustomersListPage(
-            baseurl: selectedConnection.baseurl,
-            username: selectedConnection.username,
-            password: selectedConnection.password,
-          )
-        ];
-      });
+
+    if (selectedConnectionId is int &&
+        selectedConnectionId >= 0 &&
+        connectionList.isNotEmpty) {
+      if (connectionList[selectedConnectionId] is Connection) {
+        setState(() {
+          _selectedConnectionId = selectedConnectionId;
+          _selectedConnection = connectionList[_selectedConnectionId];
+          _isSelectedConnectionReady = true;
+          _children = [
+            ReportsPage(
+              baseurl: _selectedConnection.baseurl,
+              username: _selectedConnection.username,
+              password: _selectedConnection.password,
+            ),
+            OrdersListPage(
+              baseurl: _selectedConnection.baseurl,
+              username: _selectedConnection.username,
+              password: _selectedConnection.password,
+            ),
+            ProductsListPage(
+              baseurl: _selectedConnection.baseurl,
+              username: _selectedConnection.username,
+              password: _selectedConnection.password,
+            ),
+            CustomersListPage(
+              baseurl: _selectedConnection.baseurl,
+              username: _selectedConnection.username,
+              password: _selectedConnection.password,
+            )
+          ];
+        });
+      }
     }
   }
 
+  // Future<void> setBottomNavigationMenu() async {
+  //   if (_isSelectedConnectionReady &&
+  //       _selectedConnectionId is int &&
+  //       _selectedConnectionId >= 0 &&
+  //       _selectedConnection is Connection) {
+  //     setState(
+  //       () {
+  //         _children = [
+  //           ReportsPage(
+  //             baseurl: _selectedConnection.baseurl,
+  //             username: _selectedConnection.username,
+  //             password: _selectedConnection.password,
+  //           ),
+  //           OrdersListPage(
+  //             baseurl: _selectedConnection.baseurl,
+  //             username: _selectedConnection.username,
+  //             password: _selectedConnection.password,
+  //           ),
+  //           ProductsListPage(
+  //             baseurl: _selectedConnection.baseurl,
+  //             username: _selectedConnection.username,
+  //             password: _selectedConnection.password,
+  //           ),
+  //           CustomersListPage(
+  //             baseurl: _selectedConnection.baseurl,
+  //             username: _selectedConnection.username,
+  //             password: _selectedConnection.password,
+  //           )
+  //         ];
+  //       },
+  //     );
+  //   }
+  // }
+
   Widget myAppBar() {
     Widget myAppBarWidgetData;
-    if (!(selectedConnection is Connection)) {
+    if (!_isSelectedConnectionReady &&
+        _selectedConnectionId is int &&
+        _selectedConnection is! Connection) {
       myAppBarWidgetData = AppBar(
         title: Text("Setup"),
       );
@@ -119,53 +190,62 @@ class _MyBottomNavigatorState extends State<MyBottomNavigator> {
 
   Widget myBody() {
     Widget myBodyWidgetData = SizedBox.shrink();
-    if (selectedConnection is Connection) {
-      myBodyWidgetData =
-          IndexedStack(index: _selectedIndex, children: _children);
-    } else {
+    if (_isSelectedConnectionReady &&
+        _selectedConnectionId is int &&
+        _selectedConnectionId >= 0 &&
+        _selectedConnection.runtimeType == Connection) {
+      myBodyWidgetData = IndexedStack(
+        index: _selectedBottomNavigationIndex,
+        children: _children,
+      );
+    } else if (_isSelectedConnectionReady && _selectedConnectionId < 0) {
       final GlobalKey<RefreshIndicatorState> _refreshIndicatorKey =
           new GlobalKey<RefreshIndicatorState>();
       myBodyWidgetData = RefreshIndicator(
         key: _refreshIndicatorKey,
-        onRefresh: getInitialConnection,
+        onRefresh: setSelectedConnection,
         child: SingleChildScrollView(
-          child: Padding(
-            padding: const EdgeInsets.all(20),
-            child: Column(
-              mainAxisAlignment: MainAxisAlignment.center,
-              children: <Widget>[
-                Text(
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: <Widget>[
+              Padding(
+                padding: const EdgeInsets.fromLTRB(10, 20, 10, 20),
+                child: Text(
                   "Kindly add a connection to manage woocommerce",
                   textAlign: TextAlign.center,
                 ),
-                SizedBox(
-                  height: 20,
-                ),
-                Container(
-                  height: 45,
-                  width: 200,
-                  child: RaisedButton(
-                    color: Theme.of(context).primaryColor,
-                    textColor: Colors.white,
-                    onPressed: () {
-                      Navigator.push(
-                        context,
-                        MaterialPageRoute(
-                          builder: (context) => AddConnectionPage(
-                            refreshConnectionsList: getInitialConnection,
-                          ),
+              ),
+              Container(
+                height: 45,
+                width: 200,
+                child: RaisedButton(
+                  color: Theme.of(context).primaryColor,
+                  textColor: Colors.white,
+                  onPressed: () {
+                    Navigator.push(
+                      context,
+                      MaterialPageRoute(
+                        builder: (context) => AddConnectionPage(
+                          refreshConnectionsList: setSelectedConnection,
                         ),
-                      );
-                    },
-                    child: Text(
-                      "Add Connection",
-                      style: Theme.of(context).textTheme.button,
-                    ),
+                      ),
+                    );
+                  },
+                  child: Text(
+                    "Add Connection",
+                    style: Theme.of(context).textTheme.button,
                   ),
-                )
-              ],
-            ),
+                ),
+              )
+            ],
           ),
+        ),
+      );
+    } else {
+      myBodyWidgetData = Center(
+        child: SpinKitPulse(
+          color: Theme.of(context).primaryColor,
+          size: 70,
         ),
       );
     }
@@ -174,7 +254,9 @@ class _MyBottomNavigatorState extends State<MyBottomNavigator> {
 
   Widget myBottomNavigation() {
     Widget myBottomNavigationWidgetData = SizedBox.shrink();
-    if (selectedConnection is Connection) {
+    if (_isSelectedConnectionReady &&
+        _selectedBottomNavigationIndex >= 0 &&
+        _selectedConnection.runtimeType == Connection) {
       myBottomNavigationWidgetData = BottomNavigationBar(
           // backgroundColor: Colors.purple, //Not Working Don't Know why
           showSelectedLabels: true,
@@ -182,10 +264,10 @@ class _MyBottomNavigatorState extends State<MyBottomNavigator> {
           unselectedItemColor: Config.colors["lightTheme"]
               ["bottomNavInactiveColor"],
           selectedItemColor: Config.colors["lightTheme"]["mainThemeColor"],
-          currentIndex: _selectedIndex,
+          currentIndex: _selectedBottomNavigationIndex,
           onTap: (int index) {
             setState(() {
-              _selectedIndex = index;
+              _selectedBottomNavigationIndex = index;
             });
           },
           items: const <BottomNavigationBarItem>[
@@ -203,7 +285,7 @@ class _MyBottomNavigatorState extends State<MyBottomNavigator> {
             ),
             BottomNavigationBarItem(
               icon: Icon(Icons.people),
-              title: Text('Customers'),
+              title: Text('Users'),
             ),
           ]);
     }

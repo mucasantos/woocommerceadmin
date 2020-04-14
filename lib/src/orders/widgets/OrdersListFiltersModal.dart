@@ -1,4 +1,5 @@
 import 'dart:convert';
+import 'dart:io';
 import 'package:http/http.dart' as http;
 import 'package:flutter/material.dart';
 import 'package:flutter_spinkit/flutter_spinkit.dart';
@@ -47,6 +48,13 @@ class _OrdersListFiltersModalState extends State<OrdersListFiltersModal> {
   }
 
   @override
+  void setState(fn) {
+    if (mounted) {
+      super.setState(fn);
+    }
+  }
+
+  @override
   Widget build(BuildContext context) {
     return AlertDialog(
       title: Text("Sort & Filter"),
@@ -62,71 +70,74 @@ class _OrdersListFiltersModalState extends State<OrdersListFiltersModal> {
                 "Sort by",
                 style: Theme.of(context).textTheme.subhead,
               ),
-              Row(
-                children: <Widget>[
-                  Expanded(
-                    child: Container(
-                      child: DropdownButton<String>(
-                        underline: SizedBox.shrink(),
-                        value: sortOrderByValue,
-                        onChanged: (String newValue) {
-                          FocusScope.of(context).requestFocus(FocusNode());
-                          setState(() {
-                            sortOrderByValue = newValue;
-                          });
-                        },
-                        items: <String>[
-                          "date",
-                          "id",
-                          "title",
-                          "slug",
-                          "include"
-                        ].map<DropdownMenuItem<String>>((String value) {
-                          return DropdownMenuItem<String>(
-                            value: value,
-                            child: Text(
-                              value.titleCase,
-                              textAlign: TextAlign.center,
-                              style: Theme.of(context).textTheme.body1,
-                            ),
-                          );
-                        }).toList(),
+              Padding(
+                padding: const EdgeInsets.fromLTRB(10, 0, 10, 0),
+                child: Row(
+                  children: <Widget>[
+                    Expanded(
+                      child: Container(
+                        child: DropdownButton<String>(
+                          underline: SizedBox.shrink(),
+                          value: sortOrderByValue,
+                          onChanged: (String newValue) {
+                            FocusScope.of(context).requestFocus(FocusNode());
+                            setState(() {
+                              sortOrderByValue = newValue;
+                            });
+                          },
+                          items: <String>[
+                            "date",
+                            "id",
+                            "title",
+                            "slug",
+                            "include"
+                          ].map<DropdownMenuItem<String>>((String value) {
+                            return DropdownMenuItem<String>(
+                              value: value,
+                              child: Text(
+                                value.titleCase,
+                                textAlign: TextAlign.center,
+                                style: Theme.of(context).textTheme.body1,
+                              ),
+                            );
+                          }).toList(),
+                        ),
                       ),
                     ),
-                  ),
-                  InkWell(
-                    child: Padding(
-                      padding: const EdgeInsets.symmetric(horizontal: 10),
-                      child: Icon(
-                        Icons.arrow_downward,
-                        color: (sortOrderValue == "desc")
-                            ? Theme.of(context).primaryColor
-                            : Colors.black,
+                    InkWell(
+                      child: Padding(
+                        padding: const EdgeInsets.symmetric(horizontal: 10),
+                        child: Icon(
+                          Icons.arrow_downward,
+                          color: (sortOrderValue == "desc")
+                              ? Theme.of(context).primaryColor
+                              : Colors.black,
+                        ),
                       ),
+                      onTap: () {
+                        setState(() {
+                          sortOrderValue = "desc";
+                        });
+                      },
                     ),
-                    onTap: () {
-                      setState(() {
-                        sortOrderValue = "desc";
-                      });
-                    },
-                  ),
-                  InkWell(
-                    child: Padding(
-                      padding: const EdgeInsets.symmetric(horizontal: 10),
-                      child: Icon(
-                        Icons.arrow_upward,
-                        color: (sortOrderValue == "asc")
-                            ? Theme.of(context).primaryColor
-                            : Colors.black,
+                    InkWell(
+                      child: Padding(
+                        padding: const EdgeInsets.symmetric(horizontal: 10),
+                        child: Icon(
+                          Icons.arrow_upward,
+                          color: (sortOrderValue == "asc")
+                              ? Theme.of(context).primaryColor
+                              : Colors.black,
+                        ),
                       ),
+                      onTap: () {
+                        setState(() {
+                          sortOrderValue = "asc";
+                        });
+                      },
                     ),
-                    onTap: () {
-                      setState(() {
-                        sortOrderValue = "asc";
-                      });
-                    },
-                  ),
-                ],
+                  ],
+                ),
               ),
               Text(
                 "Filter by",
@@ -153,7 +164,7 @@ class _OrdersListFiltersModalState extends State<OrdersListFiltersModal> {
                       children: <Widget>[
                         Expanded(
                           child: Padding(
-                            padding: const EdgeInsets.fromLTRB(10, 0, 10, 0),
+                            padding: const EdgeInsets.fromLTRB(10, 10, 10, 10),
                             child: Text(
                               orderStatusOptionsError,
                               style: Theme.of(context).textTheme.body1,
@@ -172,11 +183,12 @@ class _OrdersListFiltersModalState extends State<OrdersListFiltersModal> {
                                       !orderStatusOptions[key];
                                 });
                               },
-                              child: Row(
-                                children: <Widget>[
-                                  SizedBox(
-                                    height: 30,
-                                    child: Checkbox(
+                              child: Container(
+                                color: Colors.transparent,
+                                height: 30,
+                                child: Row(
+                                  children: <Widget>[
+                                    Checkbox(
                                       value: orderStatusOptions[key],
                                       onChanged: (bool value) {
                                         setState(() {
@@ -184,22 +196,25 @@ class _OrdersListFiltersModalState extends State<OrdersListFiltersModal> {
                                         });
                                       },
                                     ),
-                                  ),
-                                  Text(
-                                    key.titleCase,
-                                    style: Theme.of(context).textTheme.body1,
-                                  ),
-                                ],
+                                    Expanded(
+                                      child: Text(
+                                        key.titleCase,
+                                        style:
+                                            Theme.of(context).textTheme.body1,
+                                      ),
+                                    ),
+                                  ],
+                                ),
                               ),
                             );
                           }).toList(),
                         )
                       : Container(
-                          padding: EdgeInsets.fromLTRB(0, 10, 0, 0),
+                          padding: EdgeInsets.fromLTRB(0, 20, 0, 0),
                           child: Center(
-                            child: SpinKitFadingCube(
+                            child: SpinKitPulse(
                               color: Theme.of(context).primaryColor,
-                              size: 30.0,
+                              size: 50,
                             ),
                           ),
                         )
@@ -274,6 +289,13 @@ class _OrdersListFiltersModalState extends State<OrdersListFiltersModal> {
               "Failed to fetch order status options. Error: $errorCode";
         });
       }
+    } on SocketException catch (_) {
+      setState(() {
+        isOrderStatusOptionsReady = false;
+        isOrderStatusOptionsError = true;
+        orderStatusOptionsError =
+            "Failed to fetch order status options. Error: Network not reachable";
+      });
     } catch (e) {
       setState(() {
         isOrderStatusOptionsReady = false;

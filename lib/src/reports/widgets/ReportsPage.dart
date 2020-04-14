@@ -1,4 +1,5 @@
 import 'dart:convert';
+import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:flutter_spinkit/flutter_spinkit.dart';
 import 'package:http/http.dart' as http;
@@ -72,6 +73,13 @@ class _ReportsPageState extends State<ReportsPage> {
   }
 
   @override
+  void setState(fn) {
+    if (mounted) {
+      super.setState(fn);
+    }
+  }
+
+  @override
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
@@ -132,7 +140,7 @@ class _ReportsPageState extends State<ReportsPage> {
         salesTotalsReportError = null;
       });
 
-      dynamic response;
+      http.Response response;
       try {
         response = await http.get(url);
         dynamic responseBody = json.decode(response.body);
@@ -163,6 +171,13 @@ class _ReportsPageState extends State<ReportsPage> {
             }
           });
         }
+      } on SocketException catch (_) {
+        setState(() {
+          isSalesTotalsReportReady = false;
+          isSalesTotalsReportError = true;
+          salesTotalsReportError =
+              "Unable to fetch sales totals report. Error: Network not reachable";
+        });
       } catch (e) {
         setState(() {
           isSalesTotalsReportReady = false;
@@ -213,6 +228,13 @@ class _ReportsPageState extends State<ReportsPage> {
           }
         });
       }
+    } on SocketException catch (_) {
+      setState(() {
+        isOrdersTotalsReportReady = false;
+        isOrdersTotalsReportError = true;
+        ordersTotalsReportError =
+            "Unable to fetch orders totals report. Error: Network not reachable";
+      });
     } catch (e) {
       setState(() {
         isOrdersTotalsReportReady = false;
@@ -262,6 +284,13 @@ class _ReportsPageState extends State<ReportsPage> {
           }
         });
       }
+    } on SocketException catch (_) {
+      setState(() {
+        isProductsTotalsReportReady = false;
+        isProductsTotalsReportError = true;
+        productsTotalsReportError =
+            "Unable to fetch products totals report. Error: Network not reachable";
+      });
     } catch (e) {
       setState(() {
         isProductsTotalsReportReady = false;
@@ -311,6 +340,13 @@ class _ReportsPageState extends State<ReportsPage> {
           }
         });
       }
+    } on SocketException catch (_) {
+      setState(() {
+        isCustomersTotalsReportReady = false;
+        isCustomersTotalsReportError = true;
+        customersTotalsReportError =
+            "Unable to fetch customers totals report. Error: Network not reachable";
+      });
     } catch (e) {
       setState(() {
         isCustomersTotalsReportReady = false;
@@ -360,6 +396,13 @@ class _ReportsPageState extends State<ReportsPage> {
           }
         });
       }
+    } on SocketException catch (_) {
+      setState(() {
+        isReviewsTotalsReportReady = false;
+        isReviewsTotalsReportError = true;
+        reviewsTotalsReportError =
+            "Unable to fetch reviews totals report. Error: Network not reachable";
+      });
     } catch (e) {
       setState(() {
         isReviewsTotalsReportReady = false;
@@ -409,6 +452,13 @@ class _ReportsPageState extends State<ReportsPage> {
           }
         });
       }
+    } on SocketException catch (_) {
+     setState(() {
+        isCouponsTotalsReportReady = false;
+        isCouponsTotalsReportError = true;
+        couponsTotalsReportError =
+            "Unable to fetch coupons totals report. Error: Network not reachable";
+      });
     } catch (e) {
       setState(() {
         isCouponsTotalsReportReady = false;
@@ -424,18 +474,23 @@ class _ReportsPageState extends State<ReportsPage> {
     List<Widget> salesTotalsReportWidgetData = [];
 
     if (!isSalesTotalsReportReady && !isSalesTotalsReportError) {
-      salesTotalsReportWidgetData.add(Container(
-        height: 200,
-        child: Center(
-          child: SpinKitFadingCube(
-            color: Theme.of(context).primaryColor,
-            size: 30.0,
+      salesTotalsReportWidgetData.add(
+        Container(
+          height: 200,
+          child: Center(
+            child: SpinKitPulse(
+              color: Theme.of(context).primaryColor,
+              size: 50,
+            ),
           ),
         ),
-      ));
+      );
     }
 
-    if (isSalesTotalsReportError && !isSalesTotalsReportReady) {
+    if (isSalesTotalsReportError &&
+        !isSalesTotalsReportReady &&
+        salesTotalsReportError is String &&
+        salesTotalsReportError.isNotEmpty) {
       salesTotalsReportWidgetData.add(Container(
         height: 200,
         child: Center(
@@ -860,9 +915,9 @@ class _ReportsPageState extends State<ReportsPage> {
       ordersTotalsReportWidgetData.add(Container(
         height: 200,
         child: Center(
-          child: SpinKitFadingCube(
+          child: SpinKitPulse(
             color: Theme.of(context).primaryColor,
-            size: 30.0,
+            size: 50,
           ),
         ),
       ));
@@ -956,9 +1011,9 @@ class _ReportsPageState extends State<ReportsPage> {
       productsTotalsReportWidgetData.add(Container(
         height: 200,
         child: Center(
-          child: SpinKitFadingCube(
+          child: SpinKitPulse(
             color: Theme.of(context).primaryColor,
-            size: 30.0,
+            size: 50,
           ),
         ),
       ));
@@ -1052,9 +1107,9 @@ class _ReportsPageState extends State<ReportsPage> {
       customersTotalsReportWidgetData.add(Container(
         height: 200,
         child: Center(
-          child: SpinKitFadingCube(
+          child: SpinKitPulse(
             color: Theme.of(context).primaryColor,
-            size: 30.0,
+            size: 50,
           ),
         ),
       ));
@@ -1148,9 +1203,9 @@ class _ReportsPageState extends State<ReportsPage> {
       reviewsTotalsReportWidgetData.add(Container(
         height: 200,
         child: Center(
-          child: SpinKitFadingCube(
+          child: SpinKitPulse(
             color: Theme.of(context).primaryColor,
-            size: 30.0,
+            size: 50,
           ),
         ),
       ));
@@ -1244,9 +1299,9 @@ class _ReportsPageState extends State<ReportsPage> {
       couponsTotalsReportWidgetData.add(Container(
         height: 200,
         child: Center(
-          child: SpinKitFadingCube(
+          child: SpinKitPulse(
             color: Theme.of(context).primaryColor,
-            size: 30.0,
+            size: 50,
           ),
         ),
       ));

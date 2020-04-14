@@ -1,4 +1,5 @@
 import 'dart:convert';
+import 'package:extended_image/extended_image.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_spinkit/flutter_spinkit.dart';
 import 'package:http/http.dart' as http;
@@ -37,6 +38,13 @@ class _ProductDetailsPageState extends State<ProductDetailsPage> {
   void initState() {
     super.initState();
     fetchProductDetails();
+  }
+
+  @override
+  void setState(fn) {
+    if (mounted) {
+      super.setState(fn);
+    }
   }
 
   @override
@@ -247,11 +255,22 @@ class _ProductDetailsPageState extends State<ProductDetailsPage> {
                                   isNetworkList: true,
                                 )));
                   },
-                  child: Image.network(
+                  child: ExtendedImage.network(
                     imagesSrcList[index],
                     height: 150.0,
                     width: 150.0,
                     fit: BoxFit.contain,
+                    cache: true,
+                    enableLoadState: true,
+                    loadStateChanged: (ExtendedImageState state) {
+                      if (state.extendedImageLoadState == LoadState.loading) {
+                        return SpinKitPulse(
+                          color: Theme.of(context).primaryColor,
+                          size: 50,
+                        );
+                      }
+                      return null;
+                    },
                   ),
                 );
               }),

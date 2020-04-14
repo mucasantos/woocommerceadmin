@@ -4,8 +4,14 @@ import 'package:woocommerceadmin/src/connections/widgets/AddConnectionPage.dart'
 import 'package:woocommerceadmin/src/connections/widgets/EditConnectionPage.dart';
 import 'package:woocommerceadmin/src/db/ConnectionDBProvider.dart';
 import 'package:woocommerceadmin/src/db/models/Connection.dart';
+import 'package:shared_preferences/shared_preferences.dart';
+import 'package:woocommerceadmin/main.dart';
 
 class MyDrawer extends StatefulWidget {
+  final Function() refreshMainPage;
+
+  MyDrawer({this.refreshMainPage});
+
   @override
   _MyDrawerState createState() => _MyDrawerState();
 }
@@ -21,6 +27,13 @@ class _MyDrawerState extends State<MyDrawer> {
   void initState() {
     super.initState();
     getConnectionsList();
+  }
+
+  @override
+  void setState(fn) {
+    if (mounted) {
+      super.setState(fn);
+    }
   }
 
   @override
@@ -72,7 +85,13 @@ class _MyDrawerState extends State<MyDrawer> {
                           Connection item = connectionsList[index];
                           return Card(
                             child: InkWell(
-                              onTap: () {},
+                              onTap: () async {
+                                SharedPreferences prefs =
+                                    await SharedPreferences.getInstance();
+                                prefs.setInt("selectedConnectionId", index);
+                                HomePage homePage = HomePage();
+                                homePage.setSelectedConnection();
+                              },
                               child: Padding(
                                 padding:
                                     const EdgeInsets.symmetric(vertical: 10),

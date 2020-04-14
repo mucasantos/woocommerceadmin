@@ -1,7 +1,9 @@
 import 'package:flutter/material.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 import 'package:validators/validators.dart';
 import 'package:woocommerceadmin/src/db/ConnectionDBProvider.dart';
 import 'package:woocommerceadmin/src/db/models/Connection.dart';
+import 'package:woocommerceadmin/main.dart';
 
 class AddConnectionPage extends StatefulWidget {
   final Function() refreshConnectionsList;
@@ -19,6 +21,13 @@ class _AddConnectionPageState extends State<AddConnectionPage> {
   String username;
   String password;
   bool isSubmitButtonLoading = false;
+
+  @override
+  void setState(fn) {
+    if (mounted) {
+      super.setState(fn);
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -164,18 +173,28 @@ class _AddConnectionPageState extends State<AddConnectionPage> {
         isSubmitButtonLoading = true;
       });
       id++;
-      await ConnectionDBProvider.db.insertConnection(Connection(
-          id: id, baseurl: baseurl, username: username, password: password));
+      int connectionId = await ConnectionDBProvider.db.insertConnection(
+          Connection(
+              id: id,
+              baseurl: baseurl,
+              username: username,
+              password: password));
       setState(() {
         isSubmitButtonLoading = false;
       });
+      SharedPreferences prefs = await SharedPreferences.getInstance();
+      prefs.setInt("selectedConnectionId", connectionId);
       scaffoldKey.currentState.showSnackBar(SnackBar(
         content: Text("Connection added successfully..."),
         duration: Duration(seconds: 3),
       ));
+
       if (widget.refreshConnectionsList != null) {
         widget.refreshConnectionsList();
       }
+
+      HomePage homePage = HomePage();
+      homePage.setSelectedConnection();
     }
   }
 }

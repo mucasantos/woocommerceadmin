@@ -1,4 +1,5 @@
 import 'dart:convert';
+import 'dart:io';
 
 import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
@@ -30,7 +31,7 @@ class _CustomerDetailsPageState extends State<CustomerDetailsPage> {
   Map customerData = Map();
   bool isCustomerDataReady = false;
   bool isCustomerDataError = false;
-  String customerDataError = "";
+  String customerDataError;
 
   final scaffoldKey = new GlobalKey<ScaffoldState>();
   final GlobalKey<RefreshIndicatorState> _refreshIndicatorKey =
@@ -40,6 +41,13 @@ class _CustomerDetailsPageState extends State<CustomerDetailsPage> {
   void initState() {
     super.initState();
     fetchCustomerDetails();
+  }
+
+  @override
+  void setState(fn) {
+    if (mounted) {
+      super.setState(fn);
+    }
   }
 
   @override
@@ -121,6 +129,12 @@ class _CustomerDetailsPageState extends State<CustomerDetailsPage> {
               "Failed to fetch customer details. Error: $errorCode";
         });
       }
+    } on SocketException catch (_) {
+       setState(() {
+        isCustomerDataReady = false;
+        isCustomerDataError = true;
+        customerDataError = "Failed to fetch customer details. Error: Netwok not reachable";
+      });
     } catch (e) {
       setState(() {
         isCustomerDataReady = false;
@@ -135,9 +149,9 @@ class _CustomerDetailsPageState extends State<CustomerDetailsPage> {
     if (!isCustomerDataReady && !isCustomerDataError) {
       mainLoadingWidget = Container(
         child: Center(
-          child: SpinKitFadingCube(
+          child: SpinKitPulse(
             color: Theme.of(context).primaryColor,
-            size: 30.0,
+            size: 70,
           ),
         ),
       );

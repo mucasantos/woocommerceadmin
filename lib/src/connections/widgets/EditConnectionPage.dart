@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 import 'package:validators/validators.dart';
 import 'package:woocommerceadmin/main.dart';
 import 'package:woocommerceadmin/src/db/ConnectionDBProvider.dart';
@@ -39,6 +40,13 @@ class _EditConnectionPageState extends State<EditConnectionPage> {
     baseurl = widget.baseurl;
     username = widget.username;
     password = widget.password;
+  }
+
+  @override
+  void setState(fn) {
+    if (mounted) {
+      super.setState(fn);
+    }
   }
 
   @override
@@ -160,7 +168,7 @@ class _EditConnectionPageState extends State<EditConnectionPage> {
                       final form = _formKey.currentState;
                       if (form.validate()) {
                         form.save();
-                        insertConnection();
+                        updateConnection();
                       }
                     },
                   ),
@@ -173,7 +181,7 @@ class _EditConnectionPageState extends State<EditConnectionPage> {
     );
   }
 
-  insertConnection() async {
+  updateConnection() async {
     if (widget.id is int &&
         baseurl is String &&
         baseurl.isNotEmpty &&
@@ -192,15 +200,20 @@ class _EditConnectionPageState extends State<EditConnectionPage> {
       setState(() {
         isSubmitButtonLoading = false;
       });
+      SharedPreferences prefs = await SharedPreferences.getInstance();
+      prefs.setInt("selectedConnectionId", widget.id);
+      
       scaffoldKey.currentState.showSnackBar(SnackBar(
         content: Text("Connection updated successfully..."),
         duration: Duration(seconds: 3),
       ));
+
       if (widget.refreshConnectionsList != null) {
         widget.refreshConnectionsList();
       }
-      MyBottomNavigator myBottomNavigator = MyBottomNavigator();
-      myBottomNavigator.getInitialConnection();
+
+      HomePage homePage = HomePage();
+      homePage.setSelectedConnection();
     }
   }
 }

@@ -40,6 +40,13 @@ class _ChangeOrderStatusModalState extends State<ChangeOrderStatusModal> {
   }
 
   @override
+  void setState(fn) {
+    if (mounted) {
+      super.setState(fn);
+    }
+  }
+
+  @override
   Widget build(BuildContext context) {
     return AlertDialog(
       title: Text("Change Order Status"),
@@ -98,7 +105,7 @@ class _ChangeOrderStatusModalState extends State<ChangeOrderStatusModal> {
                 : Container(
                     padding: EdgeInsets.fromLTRB(0, 10, 0, 0),
                     child: Center(
-                      child: SpinKitFadingCube(
+                      child: SpinKitPulse(
                         color: Theme.of(context).primaryColor,
                         size: 30.0,
                       ),

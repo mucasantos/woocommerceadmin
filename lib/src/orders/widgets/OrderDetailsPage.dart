@@ -1,3 +1,6 @@
+import 'dart:io';
+
+import 'package:extended_image/extended_image.dart';
 import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
@@ -32,9 +35,9 @@ class OrderDetailsPage extends StatefulWidget {
 
 class _OrderDetailsPageState extends State<OrderDetailsPage> {
   bool isOrderDataReady = false;
-  bool isError = false;
-  Map orderDetails = Map();
-  Map lineItemsDetails = {};
+  bool isOrderDataError = false;
+  String orderDataError;
+  Map orderData = {};
 
   bool isOrderNotesDataReady = false;
   bool isOrderNotesDataError = false;
@@ -55,6 +58,13 @@ class _OrderDetailsPageState extends State<OrderDetailsPage> {
   }
 
   @override
+  void setState(fn) {
+    if (mounted) {
+      super.setState(fn);
+    }
+  }
+
+  @override
   Widget build(BuildContext context) {
     return Scaffold(
       key: scaffoldKey,
@@ -62,7 +72,7 @@ class _OrderDetailsPageState extends State<OrderDetailsPage> {
         title: Text("Orders Details"),
       ),
       body: !isOrderDataReady
-          ? !isError ? _mainLoadingWidget() : Text("Error Fetching Data")
+          ? !isOrderDataError ? _mainLoadingWidget() : _orderDataErrorWidget()
           : RefreshIndicator(
               key: _refreshIndicatorKey,
               onRefresh: fetchOrderDetails,
@@ -92,7 +102,7 @@ class _OrderDetailsPageState extends State<OrderDetailsPage> {
   Future<Null> fetchOrderDetails() async {
     String url =
         "${widget.baseurl}/wp-json/wc/v3/orders/${widget.id}?consumer_key=${widget.username}&consumer_secret=${widget.password}";
-        
+
     setState(() {
       isOrderDataReady = false;
     });
@@ -103,83 +113,46 @@ class _OrderDetailsPageState extends State<OrderDetailsPage> {
       if (response.statusCode == 200) {
         if (json.decode(response.body) is Map &&
             json.decode(response.body).containsKey("id")) {
-          Map orderData = json.decode(response.body);
-
-          // if (orderData.containsKey("line_items") &&
-          //     orderData["line_items"] != null &&
-          //     // orderData["line_items"].runtimeType == List &&
-          //     orderData["line_items"].length > 0) {
-          //   for (int i = 0; i < orderData["line_items"].length; i++) {
-          //     String productId = "${orderData["line_items"][i]["product_id"]}";
-          //     setState(() {
-          //       lineItemsDetails.putIfAbsent(
-          //           productId, () => {"ready": false, "data": {}});
-          //     });
-          //   }
-          // }
-
+          Map responseBody = json.decode(response.body);
           setState(() {
-            orderDetails = orderData;
+            orderData = responseBody;
             isOrderDataReady = true;
-            isError = false;
+            isOrderDataError = false;
           });
           fetchOrderNotes();
         } else {
           setState(() {
             isOrderDataReady = false;
-            isError = true;
+            isOrderDataError = true;
+            orderDataError = "Failed to fetch order details";
           });
         }
       } else {
+        String errorCode = "";
+        if (json.decode(response.body) is Map &&
+            json.decode(response.body).containsKey("code") &&
+            json.decode(response.body)["code"] is String) {
+          errorCode = json.decode(response.body)["code"];
+        }
         setState(() {
           isOrderDataReady = false;
-          isError = true;
+          isOrderDataError = true;
+          orderDataError = "Failed to fetch order details. Error $errorCode";
         });
       }
+    } on SocketException catch (_) {
+      setState(() {
+        isOrderDataReady = false;
+        isOrderDataError = true;
+        orderDataError =
+            "Failed to fetch order details. Error: Network not reachable";
+      });
     } catch (e) {
       setState(() {
         isOrderDataReady = false;
-        isError = true;
+        isOrderDataError = true;
+        orderDataError = "Failed to fetch order details. Error $e";
       });
-    }
-  }
-
-  Future<Null> fetchLineItemsDetails(String productId) async {
-    String url =
-        "${widget.baseurl}/wp-json/wc/v3/products/$productId?consumer_key=${widget.username}&consumer_secret=${widget.password}";
-    if (isOrderDataReady) {
-      final http.Response response = await http.get(url);
-      if (response.statusCode == 200) {
-        if (json.decode(response.body) is Map &&
-            json.decode(response.body).containsKey("id")) {
-          orderDetails = json.decode(response.body);
-          // lineItemsDetails.update(productId,
-          //     (oldData) => {"ready": true, "data": json.decode(response.body)},
-          //     ifAbsent: () =>
-          //         {"ready": true, "data": json.decode(response.body)});
-          // print(lineItemsDetails);
-          // setState(() {
-          //   lineItemsDetails.update(
-          //       productId,
-          //       (oldData) =>
-          //           {"ready": true, "data": json.decode(response.body)},
-          //       ifAbsent: () =>
-          //           {"ready": true, "data": json.decode(response.body)});
-          // });
-        } else {
-          setState(() {
-            lineItemsDetails.update(
-                productId, (oldData) => {"ready": false, "data": {}},
-                ifAbsent: () => {"ready": false, "data": {}});
-          });
-        }
-      } else {
-        setState(() {
-          lineItemsDetails.update(
-              productId, (oldData) => {"ready": false, "data": {}},
-              ifAbsent: () => {"ready": false, "data": {}});
-        });
-      }
     }
   }
 
@@ -193,9 +166,7 @@ class _OrderDetailsPageState extends State<OrderDetailsPage> {
 
     http.Response response;
     try {
-      response = await http.put(url, body: {
-        "status": orderStatus
-      });
+      response = await http.put(url, body: {"status": orderStatus});
       if (json.decode(response.body) is Map &&
           json.decode(response.body).containsKey("id")) {
         scaffoldKey.currentState.showSnackBar(SnackBar(
@@ -217,14 +188,22 @@ class _OrderDetailsPageState extends State<OrderDetailsPage> {
           isOrderDataReady = true;
         });
       }
+    } on SocketException catch (_) {
+      scaffoldKey.currentState.showSnackBar(SnackBar(
+        content: Text("Failed to update order. Error: Network not reachable"),
+        duration: Duration(seconds: 3),
+      ));
+      setState(() {
+        isOrderDataReady = true;
+      });
     } catch (e) {
       scaffoldKey.currentState.showSnackBar(SnackBar(
         content: Text("Failed to update order. Error: $e"),
         duration: Duration(seconds: 3),
       ));
       setState(() {
-          isOrderDataReady = true;
-        });
+        isOrderDataReady = true;
+      });
     }
   }
 
@@ -269,6 +248,13 @@ class _OrderDetailsPageState extends State<OrderDetailsPage> {
               "Failed to fetch order notes. Error: $errorCode";
         });
       }
+    } on SocketException catch (_) {
+      setState(() {
+        isOrderNotesDataReady = false;
+        isOrderNotesDataError = true;
+        orderNotesDataError =
+            "Failed to fetch order notes. Error: Network not reachable";
+      });
     } catch (e) {
       setState(() {
         isOrderNotesDataReady = false;
@@ -311,6 +297,11 @@ class _OrderDetailsPageState extends State<OrderDetailsPage> {
           duration: Duration(seconds: 3),
         ));
       }
+    } on SocketException catch (_) {
+      scaffoldKey.currentState.showSnackBar(SnackBar(
+        content: Text("Failed to add order note. Error: Network not reachable"),
+        duration: Duration(seconds: 3),
+      ));
     } catch (e) {
       scaffoldKey.currentState.showSnackBar(SnackBar(
         content: Text("Failed to add order note. Error: $e"),
@@ -331,7 +322,6 @@ class _OrderDetailsPageState extends State<OrderDetailsPage> {
     http.Response response;
     try {
       response = await http.delete(url);
-      print(json.decode(response.body));
       if (json.decode(response.body) is Map &&
           json.decode(response.body).containsKey("id")) {
         scaffoldKey.currentState.showSnackBar(SnackBar(
@@ -350,6 +340,12 @@ class _OrderDetailsPageState extends State<OrderDetailsPage> {
           duration: Duration(seconds: 3),
         ));
       }
+    } on SocketException catch (_) {
+      scaffoldKey.currentState.showSnackBar(SnackBar(
+        content:
+            Text("Failed to delete order note. Error: Network not reachable"),
+        duration: Duration(seconds: 3),
+      ));
     } catch (e) {
       scaffoldKey.currentState.showSnackBar(SnackBar(
         content: Text("Failed to delete order note. Error: $e"),
@@ -360,12 +356,12 @@ class _OrderDetailsPageState extends State<OrderDetailsPage> {
 
   Widget _mainLoadingWidget() {
     Widget mainLoadingWidget = SizedBox.shrink();
-    if (!isOrderDataReady && !isError) {
+    if (!isOrderDataReady && !isOrderDataError) {
       mainLoadingWidget = Container(
         child: Center(
-          child: SpinKitFadingCube(
+          child: SpinKitPulse(
             color: Theme.of(context).primaryColor,
-            size: 30.0,
+            size: 70,
           ),
         ),
       );
@@ -373,37 +369,51 @@ class _OrderDetailsPageState extends State<OrderDetailsPage> {
     return mainLoadingWidget;
   }
 
+  Widget _orderDataErrorWidget() {
+    Widget productDataErrorWidget = SizedBox.shrink();
+    if (isOrderDataError &&
+        !isOrderDataReady &&
+        orderDataError is String &&
+        orderDataError.isNotEmpty) {
+      productDataErrorWidget = Container(
+        child: Center(
+          child: Text(orderDataError),
+        ),
+      );
+    }
+    return productDataErrorWidget;
+  }
+
   Widget _orderGeneralWidget() {
     Widget orderGeneralWidget = SizedBox.shrink();
     List<Widget> orderGeneralData = [];
     if (isOrderDataReady &&
-        (orderDetails.containsKey("id") ||
-            orderDetails.containsKey("date_created") ||
-            orderDetails.containsKey("status"))) {
+        (orderData.containsKey("id") ||
+            orderData.containsKey("date_created") ||
+            orderData.containsKey("status"))) {
       if (isOrderDataReady &&
-          orderDetails.containsKey("id") &&
-          orderDetails["id"] != null) {
-        orderGeneralData.add(Text("Order ID: ${orderDetails["id"]}"));
+          orderData.containsKey("id") &&
+          orderData["id"] is int) {
+        orderGeneralData.add(Text("Order ID: ${orderData["id"]}"));
       }
 
       if (isOrderDataReady &&
-          orderDetails.containsKey("date_created") &&
-          orderDetails["date_created"] is String) {
+          orderData.containsKey("date_created") &&
+          orderData["date_created"] is String) {
         orderGeneralData.add(Text(
           "Created: " +
               DateFormat("EEEE, d/M/y h:mm:ss a")
-                  .format(DateTime.parse(orderDetails["date_created"])),
+                  .format(DateTime.parse(orderData["date_created"])),
         ));
       }
 
       if (isOrderDataReady &&
-          orderDetails.containsKey("status") &&
-          orderDetails["status"] is String) {
+          orderData.containsKey("status") &&
+          orderData["status"] is String) {
         orderGeneralData.add(
           Row(
             children: <Widget>[
-              Text("Order Status: " +
-                  orderDetails["status"].toString().titleCase),
+              Text("Order Status: " + orderData["status"].toString().titleCase),
               SizedBox(
                 width: 20,
               ),
@@ -414,19 +424,20 @@ class _OrderDetailsPageState extends State<OrderDetailsPage> {
                 ),
                 onTap: () async {
                   return showDialog<void>(
-                      context: context,
-                      barrierDismissible: false,
-                      builder: (BuildContext context) {
-                        return ChangeOrderStatusModal(
-                          baseurl: widget.baseurl,
-                          username: widget.username,
-                          password: widget.password,
-                          orderStatus: orderDetails["status"],
-                          onSubmit: (String newOrderStatus) {
-                            updateOrder(newOrderStatus);
-                          },
-                        );
-                      });
+                    context: context,
+                    barrierDismissible: false,
+                    builder: (BuildContext context) {
+                      return ChangeOrderStatusModal(
+                        baseurl: widget.baseurl,
+                        username: widget.username,
+                        password: widget.password,
+                        orderStatus: orderData["status"],
+                        onSubmit: (String newOrderStatus) {
+                          updateOrder(newOrderStatus);
+                        },
+                      );
+                    },
+                  );
                 },
               ),
             ],
@@ -464,43 +475,31 @@ class _OrderDetailsPageState extends State<OrderDetailsPage> {
     List<Widget> orderProductsCardData = [];
 
     if (isOrderDataReady &&
-        orderDetails.containsKey("line_items") &&
-        orderDetails["line_items"] is List &&
-        orderDetails["line_items"].isNotEmpty) {
-      for (int i = 0; i < orderDetails["line_items"].length; i++) {
+        orderData.containsKey("line_items") &&
+        orderData["line_items"] is List &&
+        orderData["line_items"].isNotEmpty) {
+      for (int i = 0; i < orderData["line_items"].length; i++) {
         List<Widget> orderProductsData = [];
         Widget lineItemsPrimaryImage = SizedBox(
-          height: 120,
-          width: 120,
+          height: 140,
+          width: 140,
         );
 
-        if (orderDetails["line_items"][i].containsKey("product_id") &&
-            orderDetails["line_items"][i]["product_id"] != null) {
-          // String productId = "${orderDetails["line_items"][i]["product_id"]}";
-          // fetchLineItemsDetails(productId);
-          // print(lineItemsDetails);
-          // if (lineItemsDetails.containsKey(productId) &&
-          //     lineItemsDetails["$productId"]["ready"]) {
-          //   if (lineItemsDetails["$productId"]["data"].containsKey("images") &&
-          //       lineItemsDetails["$productId"]["data"]["images"] != null &&
-          //       lineItemsDetails["$productId"]["data"]["images"].length > 0 &&
-          //       lineItemsDetails["$productId"]["data"]["images"][0]
-          //           .containsKey("src") &&
-          //       lineItemsDetails["$productId"]["data"]["images"][0]["src"]
-          //           .runtimeType is String) {
-          //     String primaryImageSrc =
-          //         lineItemsDetails["$productId"]["data"]["images"][0]["src"];
-          //     print(primaryImageSrc);
-          //     // lineItemsPrimaryImage = Image.network(lineItemsDetails["$productId"]["data"]["images"][0]["src"]);
-          //   }
-          // }
+        if (orderData["line_items"][i].containsKey("product_id") &&
+            orderData["line_items"][i]["product_id"] is int) {
+          lineItemsPrimaryImage = LineItemsProductsImage(
+            baseurl: widget.baseurl,
+            username: widget.username,
+            password: widget.password,
+            id: orderData["line_items"][i]["product_id"],
+          );
         }
 
-        if (orderDetails["line_items"][i].containsKey("name") &&
-            orderDetails["line_items"][i]["name"] is String &&
-            orderDetails["line_items"][i]["name"].toString().isNotEmpty) {
+        if (orderData["line_items"][i].containsKey("name") &&
+            orderData["line_items"][i]["name"] is String &&
+            orderData["line_items"][i]["name"].toString().isNotEmpty) {
           orderProductsData.add(Text(
-            "${orderDetails["line_items"][i]["name"]}",
+            "${orderData["line_items"][i]["name"]}",
             style: Theme.of(context)
                 .textTheme
                 .body1
@@ -508,43 +507,54 @@ class _OrderDetailsPageState extends State<OrderDetailsPage> {
           ));
         }
 
-        if (orderDetails["line_items"][i].containsKey("sku") &&
-            orderDetails["line_items"][i]["sku"] is String) {
+        if (orderData["line_items"][i].containsKey("sku") &&
+            orderData["line_items"][i]["sku"] is String) {
           orderProductsData
-              .add(Text("SKU: ${orderDetails["line_items"][i]["sku"]}"));
+              .add(Text("SKU: ${orderData["line_items"][i]["sku"]}"));
         }
 
-        if (orderDetails["line_items"][i].containsKey("price") &&
-            orderDetails["line_items"][i]["price"] is String) {
+        if (orderData["line_items"][i].containsKey("price") &&
+            orderData["line_items"][i]["price"] is String) {
           orderProductsData
-              .add(Text("Price: ${orderDetails["line_items"][i]["price"]}"));
+              .add(Text("Price: ${orderData["line_items"][i]["price"]}"));
         }
 
-        if (orderDetails["line_items"][i].containsKey("quantity") &&
-            orderDetails["line_items"][i]["quantity"] is int) {
+        if (orderData["line_items"][i].containsKey("quantity") &&
+            orderData["line_items"][i]["quantity"] is int) {
           orderProductsData
-              .add(Text("Qty: ${orderDetails["line_items"][i]["quantity"]}"));
+              .add(Text("Qty: ${orderData["line_items"][i]["quantity"]}"));
         }
 
-        if (orderDetails["line_items"][i].containsKey("meta_data") &&
-            orderDetails["line_items"][i]["meta_data"] is List &&
-            orderDetails["line_items"][i]["meta_data"].isNotEmpty) {
+        if (orderData["line_items"][i].containsKey("meta_data") &&
+            orderData["line_items"][i]["meta_data"] is List &&
+            orderData["line_items"][i]["meta_data"].isNotEmpty) {
           for (int metaDataIndex = 0;
-              metaDataIndex < orderDetails["line_items"][i]["meta_data"].length;
+              metaDataIndex < orderData["line_items"][i]["meta_data"].length;
               metaDataIndex++) {
-            if (orderDetails["line_items"][i]["meta_data"][metaDataIndex]
+            if (orderData["line_items"][i]["meta_data"][metaDataIndex]
                     .containsKey("key") &&
-                orderDetails["line_items"][i]["meta_data"][metaDataIndex]
-                        ["key"] !=
-                    null &&
-                orderDetails["line_items"][i]["meta_data"][metaDataIndex]
-                        ["key"] ==
+                orderData["line_items"][i]["meta_data"][metaDataIndex]["key"]
+                    is String &&
+                orderData["line_items"][i]["meta_data"][metaDataIndex]["key"] ==
                     "_tmcartepo_data") {
-              orderProductsData.add(Text(orderDetails["line_items"][i]
-                      ["meta_data"][metaDataIndex]["value"][0]["name"] +
-                  ": " +
-                  orderDetails["line_items"][i]["meta_data"][metaDataIndex]
-                      ["value"][0]["value"]));
+              if (orderData["line_items"][i]["meta_data"][metaDataIndex]
+                      ["value"] is List &&
+                  orderData["line_items"][i]["meta_data"][metaDataIndex]
+                          ["value"]
+                      .isNotEmpty) {
+                for (int tmcartepoDataIndex = 0;
+                    tmcartepoDataIndex <
+                        orderData["line_items"][i]["meta_data"][metaDataIndex]
+                                ["value"]
+                            .length;
+                    tmcartepoDataIndex++) {
+                  orderProductsData.add(
+                    Text(
+                        '${orderData["line_items"][i]["meta_data"][metaDataIndex]["value"][tmcartepoDataIndex]["name"]}: ${orderData["line_items"][i]["meta_data"][metaDataIndex]["value"][tmcartepoDataIndex]["value"]}'),
+                  );
+                }
+              }
+              break;
             }
           }
         }
@@ -552,26 +562,30 @@ class _OrderDetailsPageState extends State<OrderDetailsPage> {
         orderProductsCardData.add(Card(
           child: InkWell(
             onTap: () {
-              if (orderDetails["line_items"][i].containsKey("product_id") &&
-                  orderDetails["line_items"][i]["product_id"] is int) {
+              if (orderData["line_items"][i].containsKey("product_id") &&
+                  orderData["line_items"][i]["product_id"] is int) {
                 Navigator.push(
                   context,
                   MaterialPageRoute(
-                      builder: (context) => ProductDetailsPage(
-                            baseurl: widget.baseurl,
-                            username: widget.username,
-                            password: widget.password,
-                            id: orderDetails["line_items"][i]["product_id"],
-                          )),
+                    builder: (context) => ProductDetailsPage(
+                      baseurl: widget.baseurl,
+                      username: widget.username,
+                      password: widget.password,
+                      id: orderData["line_items"][i]["product_id"],
+                    ),
+                  ),
                 );
               }
             },
             child: Row(
               children: <Widget>[
-                lineItemsPrimaryImage,
+                Padding(
+                  padding: const EdgeInsets.all(10),
+                  child: lineItemsPrimaryImage,
+                ),
                 Expanded(
                     child: Padding(
-                  padding: EdgeInsets.all(10.0),
+                  padding: EdgeInsets.all(10),
                   child: Column(
                       mainAxisAlignment: MainAxisAlignment.start,
                       crossAxisAlignment: CrossAxisAlignment.start,
@@ -612,23 +626,23 @@ class _OrderDetailsPageState extends State<OrderDetailsPage> {
     Widget orderPaymentWidget = SizedBox.shrink();
     List<Widget> orderPaymentData = [];
     if (isOrderDataReady &&
-        (orderDetails.containsKey("payment_method_title") ||
-            orderDetails.containsKey("total") ||
-            orderDetails.containsKey("shipping_total") ||
-            orderDetails.containsKey("total_tax"))) {
-      if (orderDetails.containsKey("payment_method_title") &&
-          orderDetails["payment_method_title"] is String &&
-          orderDetails["payment_method_title"].isNotEmpty) {
-        orderPaymentData.add(
-            Text("Payment Gateway: ${orderDetails["payment_method_title"]}"));
+        (orderData.containsKey("payment_method_title") ||
+            orderData.containsKey("total") ||
+            orderData.containsKey("shipping_total") ||
+            orderData.containsKey("total_tax"))) {
+      if (orderData.containsKey("payment_method_title") &&
+          orderData["payment_method_title"] is String &&
+          orderData["payment_method_title"].isNotEmpty) {
+        orderPaymentData
+            .add(Text("Payment Gateway: ${orderData["payment_method_title"]}"));
       }
 
-      if (orderDetails.containsKey("total") &&
-          orderDetails["total"] is String &&
-          orderDetails["total"].isNotEmpty) {
+      if (orderData.containsKey("total") &&
+          orderData["total"] is String &&
+          orderData["total"].isNotEmpty) {
         orderPaymentData.add(
           Text(
-            "Order Total: ${orderDetails["total"]}",
+            "Order Total: ${orderData["total"]}",
             style: Theme.of(context)
                 .textTheme
                 .body1
@@ -637,10 +651,10 @@ class _OrderDetailsPageState extends State<OrderDetailsPage> {
         );
       }
 
-      if (orderDetails.containsKey("total_tax") &&
-          orderDetails["total_tax"] is String &&
-          orderDetails["total_tax"].isNotEmpty) {
-        orderPaymentData.add(Text("Taxes: " + orderDetails["total_tax"]));
+      if (orderData.containsKey("total_tax") &&
+          orderData["total_tax"] is String &&
+          orderData["total_tax"].isNotEmpty) {
+        orderPaymentData.add(Text("Taxes: " + orderData["total_tax"]));
       }
 
       orderPaymentWidget = ExpansionTile(
@@ -675,17 +689,17 @@ class _OrderDetailsPageState extends State<OrderDetailsPage> {
     String shippingAddress = "";
 
     if (isOrderDataReady &&
-        orderDetails.containsKey("shipping") &&
-        orderDetails["shipping"] is Map) {
-      if (orderDetails["shipping"].containsKey("first_name") &&
-          orderDetails["shipping"]["first_name"] is String &&
-          orderDetails["shipping"]["first_name"].isNotEmpty) {
-        shippingName += orderDetails["shipping"]["first_name"];
+        orderData.containsKey("shipping") &&
+        orderData["shipping"] is Map) {
+      if (orderData["shipping"].containsKey("first_name") &&
+          orderData["shipping"]["first_name"] is String &&
+          orderData["shipping"]["first_name"].isNotEmpty) {
+        shippingName += orderData["shipping"]["first_name"];
       }
-      if (orderDetails["shipping"].containsKey("last_name") &&
-          orderDetails["shipping"]["last_name"] is String &&
-          orderDetails["shipping"]["last_name"].isNotEmpty) {
-        shippingName += " ${orderDetails["shipping"]["last_name"]}";
+      if (orderData["shipping"].containsKey("last_name") &&
+          orderData["shipping"]["last_name"] is String &&
+          orderData["shipping"]["last_name"].isNotEmpty) {
+        shippingName += " ${orderData["shipping"]["last_name"]}";
       }
       if (shippingName.isNotEmpty) {
         orderShippingData.add(Text(
@@ -697,40 +711,40 @@ class _OrderDetailsPageState extends State<OrderDetailsPage> {
         ));
       }
 
-      if (orderDetails["shipping"].containsKey("address_1") &&
-          orderDetails["shipping"]["address_1"] is String &&
-          orderDetails["shipping"]["address_1"].isNotEmpty) {
-        shippingAddress = orderDetails["shipping"]["address_1"].toString();
+      if (orderData["shipping"].containsKey("address_1") &&
+          orderData["shipping"]["address_1"] is String &&
+          orderData["shipping"]["address_1"].isNotEmpty) {
+        shippingAddress = orderData["shipping"]["address_1"].toString();
       }
 
-      if (orderDetails["shipping"].containsKey("address_2") &&
-          orderDetails["shipping"]["address_2"] is String &&
-          orderDetails["shipping"]["address_2"].isNotEmpty) {
-        shippingAddress += " ${orderDetails["shipping"]["address_2"]}";
+      if (orderData["shipping"].containsKey("address_2") &&
+          orderData["shipping"]["address_2"] is String &&
+          orderData["shipping"]["address_2"].isNotEmpty) {
+        shippingAddress += " ${orderData["shipping"]["address_2"]}";
       }
 
-      if (orderDetails["shipping"].containsKey("city") &&
-          orderDetails["shipping"]["city"] is String &&
-          orderDetails["shipping"]["city"].isNotEmpty) {
-        shippingAddress += " ${orderDetails["shipping"]["city"]}";
+      if (orderData["shipping"].containsKey("city") &&
+          orderData["shipping"]["city"] is String &&
+          orderData["shipping"]["city"].isNotEmpty) {
+        shippingAddress += " ${orderData["shipping"]["city"]}";
       }
 
-      if (orderDetails["shipping"].containsKey("state") &&
-          orderDetails["shipping"]["state"] is String &&
-          orderDetails["shipping"]["state"].isNotEmpty) {
-        shippingAddress += " ${orderDetails["shipping"]["state"]}";
+      if (orderData["shipping"].containsKey("state") &&
+          orderData["shipping"]["state"] is String &&
+          orderData["shipping"]["state"].isNotEmpty) {
+        shippingAddress += " ${orderData["shipping"]["state"]}";
       }
 
-      if (orderDetails["shipping"].containsKey("postcode") &&
-          orderDetails["shipping"]["postcode"] is String &&
-          orderDetails["shipping"]["postcode"].isNotEmpty) {
-        shippingAddress += " ${orderDetails["shipping"]["postcode"]}";
+      if (orderData["shipping"].containsKey("postcode") &&
+          orderData["shipping"]["postcode"] is String &&
+          orderData["shipping"]["postcode"].isNotEmpty) {
+        shippingAddress += " ${orderData["shipping"]["postcode"]}";
       }
 
-      if (orderDetails["shipping"].containsKey("country") &&
-          orderDetails["shipping"]["country"] is String &&
-          orderDetails["shipping"]["country"].isNotEmpty) {
-        shippingAddress += " ${orderDetails["shipping"]["country"]}";
+      if (orderData["shipping"].containsKey("country") &&
+          orderData["shipping"]["country"] is String &&
+          orderData["shipping"]["country"].isNotEmpty) {
+        shippingAddress += " ${orderData["shipping"]["country"]}";
       }
 
       if (shippingAddress.isNotEmpty) {
@@ -778,17 +792,17 @@ class _OrderDetailsPageState extends State<OrderDetailsPage> {
     String billingAddress = "";
 
     if (isOrderDataReady &&
-        orderDetails.containsKey("billing") &&
-        orderDetails["billing"] != null) {
-      if (orderDetails["billing"].containsKey("first_name") &&
-          orderDetails["billing"]["first_name"] is String &&
-          orderDetails["billing"]["first_name"].isNotEmpty) {
-        billingName += orderDetails["billing"]["first_name"];
+        orderData.containsKey("billing") &&
+        orderData["billing"] is Map) {
+      if (orderData["billing"].containsKey("first_name") &&
+          orderData["billing"]["first_name"] is String &&
+          orderData["billing"]["first_name"].isNotEmpty) {
+        billingName += orderData["billing"]["first_name"];
       }
-      if (orderDetails["billing"].containsKey("last_name") &&
-          orderDetails["billing"]["last_name"] is String &&
-          orderDetails["billing"]["last_name"].isNotEmpty) {
-        billingName += " ${orderDetails["billing"]["last_name"]}";
+      if (orderData["billing"].containsKey("last_name") &&
+          orderData["billing"]["last_name"] is String &&
+          orderData["billing"]["last_name"].isNotEmpty) {
+        billingName += " ${orderData["billing"]["last_name"]}";
       }
       if (billingName.isNotEmpty) {
         orderBillingWidgetData.add(Text(
@@ -800,78 +814,86 @@ class _OrderDetailsPageState extends State<OrderDetailsPage> {
         ));
       }
 
-      if (orderDetails["billing"].containsKey("phone") &&
-          orderDetails["billing"]["phone"] is String &&
-          orderDetails["billing"]["phone"].isNotEmpty) {
-        orderBillingWidgetData.add(RichText(
-            text: TextSpan(
-                text: "Phone: ",
-                style: Theme.of(context).textTheme.body1.copyWith(fontSize: 18),
-                children: [
-              TextSpan(
-                text: orderDetails["billing"]["phone"],
-                style: TextStyle(color: Colors.blue),
-                recognizer: TapGestureRecognizer()
-                  ..onTap = () {
-                    launch("tel:${orderDetails["billing"]["phone"]}");
-                  },
-              )
-            ])));
+      if (orderData["billing"].containsKey("phone") &&
+          orderData["billing"]["phone"] is String &&
+          orderData["billing"]["phone"].isNotEmpty) {
+        orderBillingWidgetData.add(
+          Text.rich(
+            TextSpan(
+              text: "Phone: ",
+              style: Theme.of(context).textTheme.body1,
+              children: [
+                TextSpan(
+                  text: orderData["billing"]["phone"],
+                  style: TextStyle(color: Colors.blue),
+                  recognizer: TapGestureRecognizer()
+                    ..onTap = () {
+                      launch("tel:${orderData["billing"]["phone"]}");
+                    },
+                )
+              ],
+            ),
+          ),
+        );
       }
 
-      if (orderDetails["billing"].containsKey("email") &&
-          orderDetails["billing"]["email"] is String &&
-          orderDetails["billing"]["email"].isNotEmpty) {
-        orderBillingWidgetData.add(RichText(
-            text: TextSpan(
-                text: "Email: ",
-                style: Theme.of(context).textTheme.body1.copyWith(fontSize: 18),
-                children: [
-              TextSpan(
-                text: orderDetails["billing"]["email"],
-                style: TextStyle(color: Colors.blue),
-                recognizer: TapGestureRecognizer()
-                  ..onTap = () {
-                    launch("mailto:${orderDetails["billing"]["email"]}");
-                  },
-              )
-            ])));
+      if (orderData["billing"].containsKey("email") &&
+          orderData["billing"]["email"] is String &&
+          orderData["billing"]["email"].isNotEmpty) {
+        orderBillingWidgetData.add(
+          Text.rich(
+            TextSpan(
+              text: "Email: ",
+              style: Theme.of(context).textTheme.body1,
+              children: [
+                TextSpan(
+                  text: orderData["billing"]["email"],
+                  style: TextStyle(color: Colors.blue),
+                  recognizer: TapGestureRecognizer()
+                    ..onTap = () {
+                      launch("mailto:${orderData["billing"]["email"]}");
+                    },
+                )
+              ],
+            ),
+          ),
+        );
       }
 
-      if (orderDetails["billing"].containsKey("address_1") &&
-          orderDetails["billing"]["address_1"] is String &&
-          orderDetails["billing"]["address_1"].isNotEmpty) {
-        billingAddress = orderDetails["billing"]["address_1"].toString();
+      if (orderData["billing"].containsKey("address_1") &&
+          orderData["billing"]["address_1"] is String &&
+          orderData["billing"]["address_1"].isNotEmpty) {
+        billingAddress = orderData["billing"]["address_1"].toString();
       }
 
-      if (orderDetails["billing"].containsKey("address_2") &&
-          orderDetails["billing"]["address_2"] is String &&
-          orderDetails["billing"]["address_2"].isNotEmpty) {
-        billingAddress += " ${orderDetails["billing"]["address_2"]}";
+      if (orderData["billing"].containsKey("address_2") &&
+          orderData["billing"]["address_2"] is String &&
+          orderData["billing"]["address_2"].isNotEmpty) {
+        billingAddress += " ${orderData["billing"]["address_2"]}";
       }
 
-      if (orderDetails["billing"].containsKey("city") &&
-          orderDetails["billing"]["city"] is String &&
-          orderDetails["billing"]["city"].isNotEmpty) {
-        billingAddress += " ${orderDetails["billing"]["city"]}";
+      if (orderData["billing"].containsKey("city") &&
+          orderData["billing"]["city"] is String &&
+          orderData["billing"]["city"].isNotEmpty) {
+        billingAddress += " ${orderData["billing"]["city"]}";
       }
 
-      if (orderDetails["billing"].containsKey("state") &&
-          orderDetails["billing"]["state"] is String &&
-          orderDetails["billing"]["state"].isNotEmpty) {
-        billingAddress += " ${orderDetails["billing"]["state"]}";
+      if (orderData["billing"].containsKey("state") &&
+          orderData["billing"]["state"] is String &&
+          orderData["billing"]["state"].isNotEmpty) {
+        billingAddress += " ${orderData["billing"]["state"]}";
       }
 
-      if (orderDetails["billing"].containsKey("postcode") &&
-          orderDetails["billing"]["postcode"] is String &&
-          orderDetails["billing"]["postcode"].isNotEmpty) {
-        billingAddress += " ${orderDetails["billing"]["postcode"]}";
+      if (orderData["billing"].containsKey("postcode") &&
+          orderData["billing"]["postcode"] is String &&
+          orderData["billing"]["postcode"].isNotEmpty) {
+        billingAddress += " ${orderData["billing"]["postcode"]}";
       }
 
-      if (orderDetails["billing"].containsKey("country") &&
-          orderDetails["billing"]["country"] is String &&
-          orderDetails["billing"]["country"].isNotEmpty) {
-        billingAddress += " ${orderDetails["billing"]["country"]}";
+      if (orderData["billing"].containsKey("country") &&
+          orderData["billing"]["country"] is String &&
+          orderData["billing"]["country"].isNotEmpty) {
+        billingAddress += " ${orderData["billing"]["country"]}";
       }
 
       if (billingAddress.isNotEmpty) {
@@ -1013,9 +1035,9 @@ class _OrderDetailsPageState extends State<OrderDetailsPage> {
       orderNotesWidgetData.add(Container(
         height: 100,
         child: Center(
-          child: SpinKitFadingCube(
+          child: SpinKitPulse(
             color: Theme.of(context).primaryColor,
-            size: 30,
+            size: 50,
           ),
         ),
       ));
@@ -1058,7 +1080,7 @@ class _OrderDetailsPageState extends State<OrderDetailsPage> {
                                   style: Theme.of(context)
                                       .textTheme
                                       .body1
-                                      .copyWith(fontSize: 18),
+                                      .copyWith(fontSize: 16),
                                   onOpen: (link) async {
                                     if (await canLaunch(link.url)) {
                                       await launch(link.url);
@@ -1169,5 +1191,122 @@ class _OrderDetailsPageState extends State<OrderDetailsPage> {
       ],
     );
     return orderNotesWidget;
+  }
+}
+
+class LineItemsProductsImage extends StatefulWidget {
+  final String baseurl;
+  final String username;
+  final String password;
+  final int id;
+
+  LineItemsProductsImage(
+      {Key key,
+      @required this.baseurl,
+      @required this.username,
+      @required this.password,
+      @required this.id})
+      : super(key: key);
+
+  @override
+  _LineItemsProductsImageState createState() => _LineItemsProductsImageState();
+}
+
+class _LineItemsProductsImageState extends State<LineItemsProductsImage> {
+  bool isProductDataReady = false;
+  Map productData = {};
+  bool isProductDataError = false;
+
+  @override
+  void initState() {
+    super.initState();
+    fetchLineItemsDetails(widget.id);
+  }
+
+  @override
+  void setState(fn) {
+    if (mounted) {
+      super.setState(fn);
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return isProductDataError
+        ? SizedBox(
+            height: 140,
+            width: 140,
+          )
+        : (isProductDataReady &&
+                productData.containsKey("images") &&
+                productData["images"] is List &&
+                productData["images"].isNotEmpty &&
+                productData["images"][0] is Map &&
+                productData["images"][0].containsKey("src") &&
+                productData["images"][0]["src"] is String)
+            ? ExtendedImage.network(
+                productData["images"][0]["src"],
+                height: 140,
+                width: 140,
+                fit: BoxFit.contain,
+                cache: true,
+                enableLoadState: true,
+                loadStateChanged: (ExtendedImageState state) {
+                  if (state.extendedImageLoadState == LoadState.loading) {
+                    return SpinKitPulse(
+                      color: Theme.of(context).primaryColor,
+                      size: 50,
+                    );
+                  }
+                  return null;
+                },
+              )
+            : Container(
+                height: 140,
+                width: 140,
+                child: Center(
+                  child: SpinKitPulse(
+                    color: Theme.of(context).primaryColor,
+                    size: 50,
+                  ),
+                ),
+              );
+  }
+
+  Future<Null> fetchLineItemsDetails(int productId) async {
+    String url =
+        "${widget.baseurl}/wp-json/wc/v3/products/$productId?consumer_key=${widget.username}&consumer_secret=${widget.password}";
+    setState(() {
+      isProductDataError = false;
+      isProductDataReady = false;
+    });
+    try {
+      final http.Response response = await http.get(url);
+      if (response.statusCode == 200) {
+        if (json.decode(response.body) is Map &&
+            json.decode(response.body).containsKey("id")) {
+          setState(() {
+            productData = json.decode(response.body);
+            isProductDataReady = true;
+            isProductDataError = false;
+          });
+        } else {
+          setState(() {
+            isProductDataReady = false;
+            isProductDataError = true;
+          });
+        }
+      } else {
+        setState(() {
+          isProductDataReady = false;
+          isProductDataError = true;
+        });
+      }
+    } catch (e) {
+      setState(() {
+        isProductDataReady = false;
+        isProductDataError = true;
+      });
+    }
   }
 }

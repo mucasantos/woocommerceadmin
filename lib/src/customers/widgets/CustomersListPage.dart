@@ -1,9 +1,14 @@
 import 'dart:convert';
+import 'dart:io';
+import 'package:barcode_scan/barcode_scan.dart';
+import 'package:extended_image/extended_image.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_spinkit/flutter_spinkit.dart';
 import 'package:http/http.dart' as http;
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 import 'package:woocommerceadmin/src/customers/widgets/CustomerDetailsPage.dart';
+import 'package:woocommerceadmin/src/customers/widgets/CustomersListFiltersModal.dart';
 
 class CustomersListPage extends StatefulWidget {
   final String baseurl;
@@ -26,7 +31,17 @@ class _CustomersListPageState extends State<CustomersListPage> {
   int page = 1;
   bool hasMoreToLoad = true;
   bool isListLoading = false;
+  bool isListError = false;
+  String listError;
 
+  bool isSearching = false;
+  String searchValue = "";
+
+  String sortOrderByValue = "registered_date";
+  String sortOrderValue = "desc";
+  String roleFilterValue = "customer";
+
+  final GlobalKey<ScaffoldState> scaffoldKey = new GlobalKey<ScaffoldState>();
   final GlobalKey<RefreshIndicatorState> _refreshIndicatorKey =
       new GlobalKey<RefreshIndicatorState>();
 
@@ -37,121 +52,178 @@ class _CustomersListPageState extends State<CustomersListPage> {
   }
 
   @override
+  void setState(fn) {
+    if (mounted) {
+      super.setState(fn);
+    }
+  }
+
+  @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(
-        title: Text("Customers List"),
-      ),
-      body: RefreshIndicator(
-        key: _refreshIndicatorKey,
-        onRefresh: handleRefresh,
-        child: Column(
-          children: <Widget>[
-            Expanded(
-              child: NotificationListener<ScrollNotification>(
-                onNotification: (ScrollNotification scrollInfo) {
-                  if (hasMoreToLoad &&
-                      !isListLoading &&
-                      scrollInfo.metrics.pixels ==
-                          scrollInfo.metrics.maxScrollExtent) {
-                    handleLoadMore();
-                  }
-                },
-                child: ListView.builder(
-                    itemCount: customersListData.length,
-                    itemBuilder: (BuildContext context, int index) {
-                      return Card(
-                        child: InkWell(
-                          onTap: () {
-                            Navigator.push(
-                              context,
-                              MaterialPageRoute(
-                                builder: (context) => CustomerDetailsPage(
-                                    baseurl: widget.baseurl,
-                                    username: widget.username,
-                                    password: widget.password,
-                                    id: customersListData[index]["id"]),
+      key: scaffoldKey,
+      appBar: _myAppBar(),
+      body: isListError && customersListData.isEmpty
+          ? _mainErrorWidget()
+          : RefreshIndicator(
+              key: _refreshIndicatorKey,
+              onRefresh: handleRefresh,
+              child: Column(
+                children: <Widget>[
+                  Expanded(
+                    child: NotificationListener<ScrollNotification>(
+                      onNotification: (ScrollNotification scrollInfo) {
+                        if (hasMoreToLoad &&
+                            !isListLoading &&
+                            scrollInfo.metrics.pixels ==
+                                scrollInfo.metrics.maxScrollExtent) {
+                          handleLoadMore();
+                        }
+                      },
+                      child: ListView.builder(
+                          itemCount: customersListData.length,
+                          itemBuilder: (BuildContext context, int index) {
+                            return Card(
+                              child: InkWell(
+                                onTap: () {
+                                  Navigator.push(
+                                    context,
+                                    MaterialPageRoute(
+                                      builder: (context) => CustomerDetailsPage(
+                                          baseurl: widget.baseurl,
+                                          username: widget.username,
+                                          password: widget.password,
+                                          id: customersListData[index]["id"]),
+                                    ),
+                                  );
+                                },
+                                child: Row(
+                                    mainAxisAlignment: MainAxisAlignment.start,
+                                    mainAxisSize: MainAxisSize.max,
+                                    crossAxisAlignment:
+                                        CrossAxisAlignment.center,
+                                    children: <Widget>[
+                                      _customerImage(customersListData[index]),
+                                      Expanded(
+                                        child: Padding(
+                                          padding: const EdgeInsets.all(10.0),
+                                          child: Column(
+                                              mainAxisAlignment:
+                                                  MainAxisAlignment.start,
+                                              mainAxisSize: MainAxisSize.min,
+                                              crossAxisAlignment:
+                                                  CrossAxisAlignment.start,
+                                              children: <Widget>[
+                                                _customerIdAndUsername(
+                                                    customersListData[index]),
+                                                _customerEmail(
+                                                    customersListData[index]),
+                                                _customerName(
+                                                    customersListData[index]),
+                                                _customerIsPaying(
+                                                    customersListData[index]),
+                                                _customerDateCreated(
+                                                    customersListData[index]),
+                                              ]),
+                                        ),
+                                      )
+                                    ]),
                               ),
                             );
-                          },
-                          child: Row(
-                              mainAxisAlignment: MainAxisAlignment.start,
-                              mainAxisSize: MainAxisSize.max,
-                              crossAxisAlignment: CrossAxisAlignment.center,
-                              children: <Widget>[
-                                _customerImage(customersListData[index]),
-                                Expanded(
-                                  child: Padding(
-                                    padding: const EdgeInsets.all(10.0),
-                                    child: Column(
-                                        mainAxisAlignment:
-                                            MainAxisAlignment.start,
-                                        mainAxisSize: MainAxisSize.min,
-                                        crossAxisAlignment:
-                                            CrossAxisAlignment.start,
-                                        children: <Widget>[
-                                          _customerIdAndUsername(
-                                              customersListData[index]),
-                                          _customerEmail(
-                                              customersListData[index]),
-                                          _customerName(
-                                              customersListData[index]),
-                                          _customerIsPaying(
-                                              customersListData[index]),
-                                          _customerDateCreated(
-                                              customersListData[index]),
-                                        ]),
-                                  ),
-                                )
-                              ]),
-                        ),
-                      );
-                    }),
+                          }),
+                    ),
+                  ),
+                  if (isListLoading)
+                    Container(
+                      height: 60,
+                      child: Center(
+                          child: SpinKitPulse(
+                        color: Colors.purple,
+                        size: 50,
+                      )),
+                    ),
+                ],
               ),
             ),
-            if (isListLoading)
-              Container(
-                height: 60.0,
-                color: Colors.white,
-                child: Center(
-                    child: SpinKitFadingCube(
-                  color: Colors.purple,
-                  size: 30.0,
-                )),
-              ),
-          ],
-        ),
-      ),
     );
   }
 
   fetchCustomersList() async {
     String url =
-        "${widget.baseurl}/wp-json/wc/v3/customers?page=$page&per_page=20&order=desc&orderby=registered_date&consumer_key=${widget.username}&consumer_secret=${widget.password}";
+        "${widget.baseurl}/wp-json/wc/v3/customers?page=$page&per_page=20&consumer_key=${widget.username}&consumer_secret=${widget.password}";
+
+    if (searchValue is String && searchValue.isNotEmpty) {
+      url += "&search=$searchValue";
+    }
+    if (sortOrderByValue is String && sortOrderByValue.isNotEmpty) {
+      url += "&orderby=$sortOrderByValue";
+    }
+    if (sortOrderValue is String && sortOrderValue.isNotEmpty) {
+      url += "&order=$sortOrderValue";
+    }
+    if (roleFilterValue is String && roleFilterValue.isNotEmpty) {
+      url += "&role=$roleFilterValue";
+    }
+
     setState(() {
       isListLoading = true;
+      isListError = false;
     });
-    final response = await http.get(url);
-    if (response.statusCode == 200) {
-      if (json.decode(response.body) is List &&
-          !json.decode(response.body).isEmpty) {
+    http.Response response;
+    try {
+      response = await http.get(url);
+      if (response.statusCode == 200) {
+        if (json.decode(response.body) is List) {
+          if (json.decode(response.body).isNotEmpty) {
+            setState(() {
+              hasMoreToLoad = true;
+              customersListData.addAll(json.decode(response.body));
+              isListLoading = false;
+              isListError = false;
+            });
+          } else {
+            setState(() {
+              hasMoreToLoad = false;
+              isListLoading = false;
+              isListError = false;
+            });
+          }
+        } else {
+          setState(() {
+            hasMoreToLoad = true;
+            isListLoading = false;
+            isListError = true;
+            listError = "Failed to fetch users";
+          });
+        }
+      } else {
+        String errorCode = "";
+        if (json.decode(response.body) is Map &&
+            json.decode(response.body).containsKey("code") &&
+            json.decode(response.body)["code"] is String) {
+          errorCode = json.decode(response.body)["code"];
+        }
         setState(() {
           hasMoreToLoad = true;
-          customersListData.addAll(json.decode(response.body));
           isListLoading = false;
-        });
-      } else {
-        setState(() {
-          hasMoreToLoad = false;
-          isListLoading = false;
+          isListError = true;
+          listError = "Failed to fetch users. Error: $errorCode";
         });
       }
-    } else {
+    } on SocketException catch (_) {
       setState(() {
-        hasMoreToLoad = false;
+        hasMoreToLoad = true;
         isListLoading = false;
+        isListError = true;
+        listError = "Failed to fetch users. Error: Network not reachable";
       });
-      throw Exception("Failed to get response.");
+    } catch (e) {
+      setState(() {
+        hasMoreToLoad = true;
+        isListLoading = false;
+        isListError = true;
+        listError = "Failed to fetch users. Error: $e";
+      });
     }
   }
 
@@ -170,23 +242,170 @@ class _CustomersListPageState extends State<CustomersListPage> {
     await fetchCustomersList();
   }
 
+  Future<void> scanBarcode() async {
+    try {
+      String barcode = await BarcodeScanner.scan();
+      setState(() {
+        searchValue = barcode;
+      });
+      handleRefresh();
+    } on PlatformException catch (e) {
+      if (e.code == BarcodeScanner.CameraAccessDenied) {
+        scaffoldKey.currentState.showSnackBar(SnackBar(
+          content: Text("Camera permission is not granted"),
+          duration: Duration(seconds: 3),
+        ));
+      } else {
+        scaffoldKey.currentState.showSnackBar(SnackBar(
+          content: Text("Unknown barcode scan error: $e"),
+          duration: Duration(seconds: 3),
+        ));
+      }
+    } on FormatException {
+      scaffoldKey.currentState.showSnackBar(SnackBar(
+        content: Text("Barcode scan cancelled"),
+        duration: Duration(seconds: 3),
+      ));
+    } catch (e) {
+      scaffoldKey.currentState.showSnackBar(SnackBar(
+        content: Text("Unknown barcode scan error: $e"),
+        duration: Duration(seconds: 3),
+      ));
+    }
+  }
+
+  Widget _myAppBar() {
+    Widget myAppBar;
+
+    myAppBar = AppBar(
+      title: Row(
+        children: <Widget>[
+          isSearching
+              ? Padding(
+                  padding: const EdgeInsets.only(right: 10),
+                  child: Icon(Icons.search),
+                )
+              : SizedBox.shrink(),
+          isSearching
+              ? Expanded(
+                  child: TextField(
+                    controller: TextEditingController(text: searchValue),
+                    style: TextStyle(color: Colors.white),
+                    textInputAction: TextInputAction.search,
+                    decoration: InputDecoration(
+                      border: InputBorder.none,
+                      hintText: "Search Users",
+                      hintStyle: TextStyle(
+                        color: Color.fromRGBO(255, 255, 255, 0.6),
+                      ),
+                    ),
+                    cursorColor: Colors.white,
+                    onSubmitted: (String value) {
+                      setState(() {
+                        searchValue = value;
+                      });
+                      handleRefresh();
+                    },
+                  ),
+                )
+              : Expanded(child: Text("Customers List")),
+          isSearching
+              ? IconButton(
+                  icon: Icon(Icons.center_focus_strong), onPressed: scanBarcode)
+              : IconButton(
+                  icon: Icon(Icons.search),
+                  onPressed: () {
+                    setState(() {
+                      isSearching = !isSearching;
+                    });
+                  },
+                ),
+          IconButton(
+            icon: Icon(Icons.filter_list),
+            onPressed: () {
+              showDialog(
+                context: context,
+                barrierDismissible: false,
+                builder: (BuildContext context) {
+                  return CustomersListFiltersModal(
+                    baseurl: widget.baseurl,
+                    username: widget.username,
+                    password: widget.password,
+                    sortOrderByValue: sortOrderByValue,
+                    sortOrderValue: sortOrderValue,
+                    roleFilterValue: roleFilterValue,
+                    onSubmit:
+                        (sortOrderByValue, sortOrderValue, roleFilterValue) {
+                      setState(() {
+                        this.sortOrderByValue = sortOrderByValue;
+                        this.sortOrderValue = sortOrderValue;
+                        this.roleFilterValue = roleFilterValue;
+                      });
+                      handleRefresh();
+                    },
+                  );
+                },
+              );
+            },
+          ),
+          isSearching
+              ? IconButton(
+                  icon: Icon(Icons.close),
+                  onPressed: () {
+                    bool isPreviousSearchValueNotEmpty = false;
+                    if (searchValue.isNotEmpty) {
+                      isPreviousSearchValueNotEmpty = true;
+                    } else {
+                      isPreviousSearchValueNotEmpty = false;
+                    }
+                    setState(() {
+                      isSearching = !isSearching;
+                      searchValue = "";
+                    });
+                    if (isPreviousSearchValueNotEmpty is bool &&
+                        isPreviousSearchValueNotEmpty) {
+                      handleRefresh();
+                    }
+                  },
+                )
+              : SizedBox.shrink(),
+        ],
+      ),
+    );
+    return myAppBar;
+  }
+
   Widget _customerImage(Map customerDetailsMap) {
-    Widget customerImageWidget = SizedBox(
-      height: 120,
-      width: 120,
-      child: Icon(
-        Icons.person,
-        size: 30,
+    Widget customerImageWidget = Padding(
+      padding: EdgeInsets.all(10),
+      child: SizedBox(
+        height: 140,
+        width: 140,
+        child: Icon(
+          Icons.person,
+          size: 30,
+        ),
       ),
     );
     if (customerDetailsMap.containsKey("avatar_url") &&
         customerDetailsMap["avatar_url"] is String &&
-        customerDetailsMap["avatar_url"].toString().isNotEmpty) {
-      customerImageWidget = Image.network(
+        customerDetailsMap["avatar_url"].isNotEmpty) {
+      customerImageWidget = ExtendedImage.network(
         customerDetailsMap["avatar_url"],
         fit: BoxFit.fill,
-        width: 120.0,
-        height: 120.0,
+        width: 140.0,
+        height: 140.0,
+        cache: true,
+        enableLoadState: true,
+        loadStateChanged: (ExtendedImageState state) {
+          if (state.extendedImageLoadState == LoadState.loading) {
+            return SpinKitPulse(
+              color: Theme.of(context).primaryColor,
+              size: 50,
+            );
+          }
+          return null;
+        },
       );
     }
     return customerImageWidget;
@@ -268,5 +487,36 @@ class _CustomersListPageState extends State<CustomersListPage> {
       );
     }
     return customerDateCreatedWidget;
+  }
+
+  Widget _mainErrorWidget() {
+    Widget mainErrorWidget = SizedBox.shrink();
+    if (isListError && listError is String && listError.isNotEmpty)
+      mainErrorWidget = Container(
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          crossAxisAlignment: CrossAxisAlignment.center,
+          children: [
+            Padding(
+              padding: const EdgeInsets.fromLTRB(10, 20, 10, 20),
+              child: Text(
+                listError ?? "",
+                textAlign: TextAlign.center,
+              ),
+            ),
+            Container(
+              height: 45,
+              width: 200,
+              child: RaisedButton(
+                color: Theme.of(context).primaryColor,
+                textColor: Colors.white,
+                child: Text("Retry"),
+                onPressed: handleRefresh,
+              ),
+            )
+          ],
+        ),
+      );
+    return mainErrorWidget;
   }
 }
