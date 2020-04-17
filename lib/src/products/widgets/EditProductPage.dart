@@ -347,7 +347,7 @@ class _EditProductPageState extends State<EditProductPage> {
     }
     if (manageStock is bool) {
       updatedProductData["manage_stock"] = manageStock;
-      if (manageStock && stockQuantity is String) {
+      if (manageStock && stockQuantity is int) {
         updatedProductData["stock_quantity"] = stockQuantity;
       }
     }
@@ -368,7 +368,7 @@ class _EditProductPageState extends State<EditProductPage> {
     }
     String url =
         "${widget.baseurl}/wp-json/wc/v3/products/${widget.id}?consumer_key=${widget.username}&consumer_secret=${widget.password}";
-    dynamic response;
+    http.Response response;
     try {
       response = await http.put(
         url,

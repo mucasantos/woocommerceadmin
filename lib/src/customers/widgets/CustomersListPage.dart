@@ -90,10 +90,13 @@ class _CustomersListPageState extends State<CustomersListPage> {
                                     context,
                                     MaterialPageRoute(
                                       builder: (context) => CustomerDetailsPage(
-                                          baseurl: widget.baseurl,
-                                          username: widget.username,
-                                          password: widget.password,
-                                          id: customersListData[index]["id"]),
+                                        baseurl: widget.baseurl,
+                                        username: widget.username,
+                                        password: widget.password,
+                                        id: customersListData[index]["id"],
+                                        customerData: customersListData[index],
+                                        preFetch: false,
+                                      ),
                                     ),
                                   );
                                 },

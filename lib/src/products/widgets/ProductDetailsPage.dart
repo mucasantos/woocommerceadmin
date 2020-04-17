@@ -11,30 +11,37 @@ import 'package:unicorndial/unicorndial.dart';
 import 'package:url_launcher/url_launcher.dart';
 import 'package:validators/sanitizers.dart';
 import 'package:woocommerceadmin/src/common/widgets/ImageViewer.dart';
-import 'package:woocommerceadmin/src/products/widgets/EditProductInventoryPage.dart';
+import 'package:woocommerceadmin/src/products/widgets/EditProduct/EditProductGeneralPage.dart';
+import 'package:woocommerceadmin/src/products/widgets/EditProduct/EditProductInventoryPage.dart';
+import 'package:woocommerceadmin/src/products/widgets/EditProduct/EditProductPricingPage.dart';
+import 'package:woocommerceadmin/src/products/widgets/EditProduct/EditProductShippingPage.dart';
 import 'package:woocommerceadmin/src/products/widgets/EditProductPage.dart';
-import 'package:woocommerceadmin/src/products/widgets/EditProductPricingPage.dart';
 
 class ProductDetailsPage extends StatefulWidget {
   final String baseurl;
   final String username;
   final String password;
   final int id;
-  ProductDetailsPage(
-      {Key key,
-      @required this.baseurl,
-      @required this.username,
-      @required this.password,
-      @required this.id})
-      : super(key: key);
+  final Map<String, dynamic> productData;
+  final bool preFetch;
+
+  ProductDetailsPage({
+    Key key,
+    @required this.baseurl,
+    @required this.username,
+    @required this.password,
+    @required this.id,
+    this.productData,
+    this.preFetch,
+  }) : super(key: key);
 
   @override
   _ProductDetailsPageState createState() => _ProductDetailsPageState();
 }
 
 class _ProductDetailsPageState extends State<ProductDetailsPage> {
-  Map productDetails = Map();
-  bool isProductDataReady = false;
+  Map productData = Map();
+  bool isProductDataReady = true;
   bool isProductDataError = false;
   String productDataError;
 
@@ -44,8 +51,18 @@ class _ProductDetailsPageState extends State<ProductDetailsPage> {
 
   @override
   void initState() {
+    if (widget.preFetch ?? true) {
+      fetchProductDetails();
+    } else {
+      if (widget.productData is Map &&
+          widget.productData.containsKey("id") &&
+          widget.productData["id"] is int) {
+        productData = widget.productData;
+      } else {
+        fetchProductDetails();
+      }
+    }
     super.initState();
-    fetchProductDetails();
   }
 
   @override
@@ -117,11 +134,13 @@ class _ProductDetailsPageState extends State<ProductDetailsPage> {
                                   )),
                         );
                         if (result is String) {
+                          scaffoldKey.currentState.showSnackBar(
+                            SnackBar(
+                              content: Text(result.toString()),
+                              duration: Duration(seconds: 3),
+                            ),
+                          );
                           fetchProductDetails();
-                          scaffoldKey.currentState.showSnackBar(SnackBar(
-                            content: Text(result.toString()),
-                            duration: Duration(seconds: 3),
-                          ));
                         }
                       },
                     )),
@@ -157,7 +176,7 @@ class _ProductDetailsPageState extends State<ProductDetailsPage> {
             responseBody.containsKey("id") &&
             responseBody["id"] != null) {
           setState(() {
-            productDetails = responseBody;
+            productData = responseBody;
             isProductDataReady = true;
             isProductDataError = false;
           });
@@ -232,12 +251,12 @@ class _ProductDetailsPageState extends State<ProductDetailsPage> {
   Widget _productImagesWidget() {
     Widget productImagesWidget = SizedBox.shrink();
     if (isProductDataReady &&
-        productDetails.containsKey("images") &&
-        productDetails["images"] is List &&
-        productDetails["images"].length > 0) {
+        productData.containsKey("images") &&
+        productData["images"] is List &&
+        productData["images"].length > 0) {
       List<String> imagesSrcList = [];
-      for (int i = 0; i < productDetails["images"].length; i++) {
-        imagesSrcList.add(productDetails["images"][i]["src"]);
+      for (int i = 0; i < productData["images"].length; i++) {
+        imagesSrcList.add(productData["images"][i]["src"]);
       }
       productImagesWidget = Container(
         height: 150,
@@ -250,13 +269,15 @@ class _ProductDetailsPageState extends State<ProductDetailsPage> {
               return InkWell(
                 onTap: () {
                   Navigator.push(
-                      context,
-                      MaterialPageRoute(
-                          builder: (context) => ImageViewer(
-                                imagesData: imagesSrcList,
-                                index: index,
-                                isNetworkList: true,
-                              )));
+                    context,
+                    MaterialPageRoute(
+                      builder: (context) => ImageViewer(
+                        imagesData: imagesSrcList,
+                        index: index,
+                        isNetworkList: true,
+                      ),
+                    ),
+                  );
                 },
                 child: ExtendedImage.network(
                   imagesSrcList[index],
@@ -287,8 +308,8 @@ class _ProductDetailsPageState extends State<ProductDetailsPage> {
   Widget _productHeadlineWidget() {
     Widget productHeadlineWidget = SizedBox.shrink();
     if (isProductDataReady &&
-        productDetails.containsKey("name") &&
-        productDetails["name"] is String) {
+        productData.containsKey("name") &&
+        productData["name"] is String) {
       productHeadlineWidget = Container(
         child: Row(
           children: <Widget>[
@@ -298,7 +319,7 @@ class _ProductDetailsPageState extends State<ProductDetailsPage> {
                 child: Column(
                   children: <Widget>[
                     Text(
-                      productDetails["name"],
+                      productData["name"],
                       maxLines: 3,
                       overflow: TextOverflow.ellipsis,
                       style: Theme.of(context).textTheme.headline,
@@ -338,7 +359,7 @@ class _ProductDetailsPageState extends State<ProductDetailsPage> {
                         if (await canLaunch(item2)) {
                           await launch(item2);
                         } else {
-                          scaffoldKey.currentState.showSnackBar(SnackBar(
+                          Scaffold.of(context).showSnackBar(SnackBar(
                             content: Text("Could not open url"),
                             duration: Duration(seconds: 3),
                           ));
@@ -356,7 +377,7 @@ class _ProductDetailsPageState extends State<ProductDetailsPage> {
   }
 
   ExpansionTile _getExpansionTile(String title, List<Widget> itemWidgetsList,
-      {Function onTap}) {
+      {bool isTappable = false, Function onTap}) {
     return ExpansionTile(
       title: Text(
         title,
@@ -376,9 +397,10 @@ class _ProductDetailsPageState extends State<ProductDetailsPage> {
                       mainAxisAlignment: MainAxisAlignment.start,
                       children: itemWidgetsList),
                 ),
-                Center(
-                  child: Icon(Icons.arrow_right),
-                ),
+                if (isTappable)
+                  Center(
+                    child: Icon(Icons.arrow_right),
+                  ),
               ],
             ),
           ),
@@ -393,107 +415,99 @@ class _ProductDetailsPageState extends State<ProductDetailsPage> {
     if (isProductDataReady) {
       List<Widget> productGeneralWidgetData = [];
 
-      if (productDetails.containsKey("id") && productDetails["id"] is int) {
+      if (productData.containsKey("id") && productData["id"] is int) {
         productGeneralWidgetData.add(
-          _getItemRow("Id: ", "${productDetails["id"]}"),
+          _getItemRow("Id: ", "${productData["id"]}"),
         );
       }
 
-      if (productDetails.containsKey("slug") &&
-          productDetails["slug"] is String &&
-          productDetails["slug"].isNotEmpty) {
+      if (productData.containsKey("slug") &&
+          productData["slug"] is String &&
+          productData["slug"].isNotEmpty) {
         productGeneralWidgetData.add(
-          _getItemRow("Slug: ", "${productDetails["slug"]}"),
+          _getItemRow("Slug: ", "${productData["slug"]}"),
         );
       }
 
-      if (productDetails.containsKey("permalink") &&
-          productDetails["permalink"] is String &&
-          productDetails["permalink"].isNotEmpty) {
+      if (productData.containsKey("permalink") &&
+          productData["permalink"] is String &&
+          productData["permalink"].isNotEmpty) {
         productGeneralWidgetData.add(
-          _getItemRow("Permalink: ", "${productDetails["permalink"]}",
+          _getItemRow("Permalink: ", "${productData["permalink"]}",
               linkify: true),
         );
       }
 
-      if (productDetails.containsKey("type") &&
-          productDetails["type"] is String &&
-          productDetails["type"].isNotEmpty) {
+      if (productData.containsKey("type") &&
+          productData["type"] is String &&
+          productData["type"].isNotEmpty) {
         productGeneralWidgetData.add(
-          _getItemRow("Type: ", "${productDetails["type"]}"),
+          _getItemRow("Type: ", "${productData["type"]}"),
         );
       }
 
-      if (productDetails.containsKey("sku") &&
-          productDetails["sku"] is String &&
-          productDetails["sku"].isNotEmpty) {
-        productGeneralWidgetData.add(
-          _getItemRow("Sku: ", "${productDetails["sku"]}"),
-        );
-      }
-
-      if (productDetails.containsKey("status") &&
-          productDetails["status"] is String &&
-          productDetails["status"].isNotEmpty) {
+      if (productData.containsKey("status") &&
+          productData["status"] is String &&
+          productData["status"].isNotEmpty) {
         productGeneralWidgetData.add(_getItemRow(
-            "Status: ", productDetails["status"].toString().titleCase));
+            "Status: ", productData["status"].toString().titleCase));
       }
 
-      if (productDetails.containsKey("catalog_visibility") &&
-          productDetails["catalog_visibility"] is String &&
-          productDetails["catalog_visibility"].isNotEmpty) {
+      if (productData.containsKey("catalog_visibility") &&
+          productData["catalog_visibility"] is String &&
+          productData["catalog_visibility"].isNotEmpty) {
         productGeneralWidgetData.add(_getItemRow("Catalog visibility: ",
-            productDetails["catalog_visibility"].toString().titleCase));
+            productData["catalog_visibility"].toString().titleCase));
       }
 
-      if (productDetails.containsKey("purchasable") &&
-          productDetails["purchasable"] is bool) {
+      if (productData.containsKey("purchasable") &&
+          productData["purchasable"] is bool) {
         productGeneralWidgetData.add(_getItemRow(
-            "Purchasable: ", productDetails["purchasable"] ? "Yes" : "No"));
+            "Purchasable: ", productData["purchasable"] ? "Yes" : "No"));
       }
 
-      if (productDetails.containsKey("featured") &&
-          productDetails["featured"] is bool) {
+      if (productData.containsKey("featured") &&
+          productData["featured"] is bool) {
         productGeneralWidgetData.add(
-          _getItemRow("Featured: ", productDetails["featured"] ? "Yes" : "No"),
+          _getItemRow("Featured: ", productData["featured"] ? "Yes" : "No"),
         );
       }
 
-      if (productDetails.containsKey("on_sale") &&
-          productDetails["on_sale"] is bool) {
+      if (productData.containsKey("on_sale") &&
+          productData["on_sale"] is bool) {
         productGeneralWidgetData.add(
-          _getItemRow("On Sale: ", productDetails["on_sale"] ? "Yes" : "No"),
+          _getItemRow("On Sale: ", productData["on_sale"] ? "Yes" : "No"),
         );
       }
 
-      if (productDetails.containsKey("virtual") &&
-          productDetails["virtual"] is bool) {
+      if (productData.containsKey("virtual") &&
+          productData["virtual"] is bool) {
         productGeneralWidgetData.add(
-          _getItemRow("Virtual: ", productDetails["virtual"] ? "Yes" : "No"),
+          _getItemRow("Virtual: ", productData["virtual"] ? "Yes" : "No"),
         );
       }
 
-      if (productDetails.containsKey("downloadable") &&
-          productDetails["downloadable"] is bool) {
+      if (productData.containsKey("downloadable") &&
+          productData["downloadable"] is bool) {
         productGeneralWidgetData.add(
           _getItemRow(
-              "Downloadable: ", productDetails["downloadable"] ? "Yes" : "No"),
+              "Downloadable: ", productData["downloadable"] ? "Yes" : "No"),
         );
       }
 
-      if (productDetails.containsKey("total_sales") &&
-          productDetails["total_sales"] is String &&
-          productDetails["total_sales"].isNotEmpty) {
+      if (productData.containsKey("total_sales") &&
+          productData["total_sales"] is String &&
+          productData["total_sales"].isNotEmpty) {
         productGeneralWidgetData.add(
-          _getItemRow("Total ordered: ", "${productDetails["total_sales"]}"),
+          _getItemRow("Total ordered: ", "${productData["total_sales"]}"),
         );
       }
 
-      if (productDetails.containsKey("backordered") &&
-          productDetails["backordered"] is bool) {
+      if (productData.containsKey("backordered") &&
+          productData["backordered"] is bool) {
         productGeneralWidgetData.add(
           _getItemRow(
-              "Backordered: ", productDetails["backordered"] ? "Yes" : "No"),
+              "Backordered: ", productData["backordered"] ? "Yes" : "No"),
         );
       }
 
@@ -501,6 +515,69 @@ class _ProductDetailsPageState extends State<ProductDetailsPage> {
         productGeneralWidget = _getExpansionTile(
           "General",
           productGeneralWidgetData,
+          isTappable: true,
+          onTap: () {
+            String slug;
+            if (productData.containsKey("slug") &&
+                productData["slug"] is String &&
+                productData["slug"].isNotEmpty) {
+              slug = productData["slug"];
+            }
+
+            String type;
+            if (productData.containsKey("type") &&
+                productData["type"] is String &&
+                productData["type"].isNotEmpty) {
+              type = productData["type"];
+            }
+
+            String status;
+            if (productData.containsKey("status") &&
+                productData["status"] is String &&
+                productData["status"].isNotEmpty) {
+              status = productData["status"];
+            }
+
+            String catalogVisibility;
+            if (productData.containsKey("catalog_visibility") &&
+                productData["catalog_visibility"] is String &&
+                productData["catalog_visibility"].isNotEmpty) {
+              catalogVisibility = productData["catalog_visibility"];
+            }
+
+            bool featured = false;
+            if (productData.containsKey("featured") &&
+                productData["featured"] is bool) {
+              featured = productData["featured"];
+            }
+
+            bool virtual = false;
+            if (productData.containsKey("virtual") &&
+                productData["virtual"] is bool) {
+              virtual = productData["virtual"];
+            }
+
+            bool downloadable = false;
+            if (productData.containsKey("downloadable") &&
+                productData["downloadable"] is bool) {
+              downloadable = productData["downloadable"];
+            }
+
+            Navigator.push(
+              context,
+              MaterialPageRoute(
+                builder: (context) => EditProductGeneralPage(
+                  slug: slug,
+                  type: type,
+                  status: status,
+                  catalogVisibility: catalogVisibility,
+                  featured: featured,
+                  virtual: virtual,
+                  downloadable: downloadable,
+                ),
+              ),
+            );
+          },
         );
       }
     }
@@ -513,60 +590,60 @@ class _ProductDetailsPageState extends State<ProductDetailsPage> {
     if (isProductDataReady) {
       List<Widget> pricePriceWidgetData = [];
 
-      if (productDetails.containsKey("regular_price") &&
-          productDetails["regular_price"] is String &&
-          productDetails["regular_price"].isNotEmpty) {
+      if (productData.containsKey("regular_price") &&
+          productData["regular_price"] is String &&
+          productData["regular_price"].isNotEmpty) {
         pricePriceWidgetData.add(
-          _getItemRow("Regular price: ", productDetails["regular_price"]),
+          _getItemRow("Regular price: ", productData["regular_price"]),
         );
       }
 
-      if (productDetails.containsKey("sale_price") &&
-          productDetails["sale_price"] is String &&
-          productDetails["sale_price"].isNotEmpty) {
+      if (productData.containsKey("sale_price") &&
+          productData["sale_price"] is String &&
+          productData["sale_price"].isNotEmpty) {
         pricePriceWidgetData.add(
-          _getItemRow("Sale price: ", productDetails["sale_price"]),
+          _getItemRow("Sale price: ", productData["sale_price"]),
         );
       }
 
-      if (productDetails.containsKey("date_on_sale_from") &&
-          productDetails["date_on_sale_from"] is String &&
-          productDetails["date_on_sale_from"].isNotEmpty) {
+      if (productData.containsKey("date_on_sale_from") &&
+          productData["date_on_sale_from"] is String &&
+          productData["date_on_sale_from"].isNotEmpty) {
         pricePriceWidgetData.add(
           _getItemRow(
             "Sale Price from: ",
             DateFormat("EEEE, dd/MM/yyyy")
-                .format(DateTime.parse(productDetails["date_on_sale_from"])),
+                .format(DateTime.parse(productData["date_on_sale_from"])),
           ),
         );
       }
 
-      if (productDetails.containsKey("date_on_sale_to") &&
-          productDetails["date_on_sale_to"] is String &&
-          productDetails["date_on_sale_to"].isNotEmpty) {
+      if (productData.containsKey("date_on_sale_to") &&
+          productData["date_on_sale_to"] is String &&
+          productData["date_on_sale_to"].isNotEmpty) {
         pricePriceWidgetData.add(
           _getItemRow(
             "Sale Price to: ",
             DateFormat("EEEE, dd/MM/yyyy")
-                .format(DateTime.parse(productDetails["date_on_sale_to"])),
+                .format(DateTime.parse(productData["date_on_sale_to"])),
           ),
         );
       }
 
-      if (productDetails.containsKey("tax_status") &&
-          productDetails["tax_status"] is String &&
-          productDetails["tax_status"].isNotEmpty) {
+      if (productData.containsKey("tax_status") &&
+          productData["tax_status"] is String &&
+          productData["tax_status"].isNotEmpty) {
         pricePriceWidgetData.add(
-          _getItemRow("Tax status: ",
-              productDetails["tax_status"].toString().titleCase),
+          _getItemRow(
+              "Tax status: ", productData["tax_status"].toString().titleCase),
         );
       }
 
-      if (productDetails.containsKey("tax_class") &&
-          productDetails["tax_class"] is String &&
-          productDetails["tax_class"].isNotEmpty) {
+      if (productData.containsKey("tax_class") &&
+          productData["tax_class"] is String &&
+          productData["tax_class"].isNotEmpty) {
         pricePriceWidgetData.add(
-          _getItemRow("Tax class: ", productDetails["tax_class"]),
+          _getItemRow("Tax class: ", productData["tax_class"]),
         );
       }
 
@@ -574,58 +651,54 @@ class _ProductDetailsPageState extends State<ProductDetailsPage> {
         productPriceWidget = _getExpansionTile(
           "Pricing",
           pricePriceWidgetData,
-          onTap: () {
-            String regularPrice = "";
-            if (productDetails is Map &&
-                productDetails.containsKey("regular_price") &&
-                productDetails["regular_price"] is String &&
-                productDetails["regular_price"].isNotEmpty) {
-              regularPrice = productDetails["regular_price"];
+          isTappable: true,
+          onTap: () async {
+            String regularPrice;
+            if (productData.containsKey("regular_price") &&
+                productData["regular_price"] is String &&
+                productData["regular_price"].isNotEmpty) {
+              regularPrice = productData["regular_price"];
             }
 
-            String salePrice = "";
-            if (productDetails is Map &&
-                productDetails.containsKey("sale_price") &&
-                productDetails["sale_price"] is String &&
-                productDetails["sale_price"].isNotEmpty) {
-              salePrice = productDetails["sale_price"];
+            String salePrice;
+            if (productData.containsKey("sale_price") &&
+                productData["sale_price"] is String &&
+                productData["sale_price"].isNotEmpty) {
+              salePrice = productData["sale_price"];
             }
 
             DateTime dateOnSaleFrom;
-            if (productDetails is Map &&
-                productDetails.containsKey("date_on_sale_from")) {
-              dateOnSaleFrom = toDate(productDetails["date_on_sale_from"]);
+            if (productData.containsKey("date_on_sale_from")) {
+              dateOnSaleFrom = toDate(productData["date_on_sale_from"]);
             }
 
             DateTime dateOnSaleTo;
-            if (productDetails is Map &&
-                productDetails.containsKey("date_on_sale_to")) {
-              dateOnSaleTo = toDate(productDetails["date_on_sale_to"]);
+            if (productData.containsKey("date_on_sale_to")) {
+              dateOnSaleTo = toDate(productData["date_on_sale_to"]);
             }
 
-            String taxStatus = "";
-            if (productDetails is Map &&
-                productDetails.containsKey("tax_status") &&
-                productDetails["tax_status"] is String &&
-                productDetails["tax_status"].isNotEmpty) {
-              taxStatus = productDetails["tax_status"];
+            String taxStatus;
+            if (productData.containsKey("tax_status") &&
+                productData["tax_status"] is String &&
+                productData["tax_status"].isNotEmpty) {
+              taxStatus = productData["tax_status"];
             }
 
-            String taxClass = "";
-            if (productDetails is Map &&
-                productDetails.containsKey("tax_class") &&
-                productDetails["tax_class"] is String &&
-                productDetails["tax_class"].isNotEmpty) {
-              taxClass = productDetails["tax_class"];
+            String taxClass;
+            if (productData.containsKey("tax_class") &&
+                productData["tax_class"] is String &&
+                productData["tax_class"].isNotEmpty) {
+              taxClass = productData["tax_class"];
             }
 
-            Navigator.push(
+            String result = await Navigator.push(
               context,
               MaterialPageRoute(
                 builder: (context) => EditProductPricingPage(
                   baseurl: widget.baseurl,
                   username: widget.username,
                   password: widget.password,
+                  id: widget.id,
                   regularPrice: regularPrice,
                   salePrice: salePrice,
                   dateOnSaleFrom: dateOnSaleFrom,
@@ -635,6 +708,16 @@ class _ProductDetailsPageState extends State<ProductDetailsPage> {
                 ),
               ),
             );
+
+            if (result is String) {
+              scaffoldKey.currentState.showSnackBar(
+                SnackBar(
+                  content: Text(result.toString()),
+                  duration: Duration(seconds: 3),
+                ),
+              );
+              fetchProductDetails();
+            }
           },
         );
       }
@@ -647,52 +730,60 @@ class _ProductDetailsPageState extends State<ProductDetailsPage> {
     if (isProductDataReady) {
       List<Widget> productInventoryWidgetData = [];
 
-      if (productDetails.containsKey("stock_status") &&
-          productDetails["stock_status"] is String &&
-          productDetails["stock_status"].isNotEmpty) {
+      if (productData.containsKey("sku") &&
+          productData["sku"] is String &&
+          productData["sku"].isNotEmpty) {
+        productInventoryWidgetData.add(
+          _getItemRow("Sku: ", "${productData["sku"]}"),
+        );
+      }
+
+      if (productData.containsKey("stock_status") &&
+          productData["stock_status"] is String &&
+          productData["stock_status"].isNotEmpty) {
         productInventoryWidgetData.add(
           _getItemRow("Stock status: ",
-              productDetails["stock_status"].toString().titleCase),
+              productData["stock_status"].toString().titleCase),
         );
       }
 
-      if (productDetails.containsKey("manage_stock") &&
-          productDetails["manage_stock"] is bool) {
+      if (productData.containsKey("manage_stock") &&
+          productData["manage_stock"] is bool) {
         productInventoryWidgetData.add(
-          _getItemRow("Manage stock: ",
-              (productDetails["manage_stock"] ? "Yes" : "No")),
+          _getItemRow(
+              "Manage stock: ", (productData["manage_stock"] ? "Yes" : "No")),
         );
       }
 
-      if (productDetails.containsKey("stock_quantity") &&
-          productDetails["stock_quantity"] is int) {
+      if (productData.containsKey("stock_quantity") &&
+          productData["stock_quantity"] is int) {
         productInventoryWidgetData.add(
-          _getItemRow("Stock qty: ", "${productDetails["stock_quantity"]}"),
+          _getItemRow("Stock qty: ", "${productData["stock_quantity"]}"),
         );
       }
 
-      if (productDetails.containsKey("backorders_allowed") &&
-          productDetails["backorders_allowed"] is bool) {
+      if (productData.containsKey("backorders_allowed") &&
+          productData["backorders_allowed"] is bool) {
         productInventoryWidgetData.add(
           _getItemRow("Backorders allowed: ",
-              productDetails["backorders_allowed"] ? "Yes" : "No"),
+              productData["backorders_allowed"] ? "Yes" : "No"),
         );
       }
 
-      if (productDetails.containsKey("backorders") &&
-          productDetails["backorders"] is String &&
-          productDetails["backorders"].isNotEmpty) {
+      if (productData.containsKey("backorders") &&
+          productData["backorders"] is String &&
+          productData["backorders"].isNotEmpty) {
         productInventoryWidgetData.add(
-          _getItemRow("Backorders: ",
-              productDetails["backorders"].toString().titleCase),
+          _getItemRow(
+              "Backorders: ", productData["backorders"].toString().titleCase),
         );
       }
 
-      if (productDetails.containsKey("sold_individually") &&
-          productDetails["sold_individually"] is bool) {
+      if (productData.containsKey("sold_individually") &&
+          productData["sold_individually"] is bool) {
         productInventoryWidgetData.add(
           _getItemRow("Sold individually: ",
-              productDetails["sold_individually"] ? "Yes" : "No"),
+              productData["sold_individually"] ? "Yes" : "No"),
         );
       }
 
@@ -700,56 +791,66 @@ class _ProductDetailsPageState extends State<ProductDetailsPage> {
         productInventoryWidget = _getExpansionTile(
           "Inventory",
           productInventoryWidgetData,
-          onTap: () {
-            String stockStatus = "";
-            if (productDetails is Map &&
-                productDetails.containsKey("stock_status") &&
-                productDetails["stock_status"] is String &&
-                productDetails["stock_status"].isNotEmpty) {
-              stockStatus = productDetails["stock_status"];
+          isTappable: true,
+          onTap: () async {
+            String sku;
+            if (productData.containsKey("sku") &&
+                productData["sku"] is String &&
+                productData["sku"].isNotEmpty) {
+              sku = productData["sku"];
+            }
+
+            String stockStatus;
+            if (productData.containsKey("stock_status") &&
+                productData["stock_status"] is String &&
+                productData["stock_status"].isNotEmpty) {
+              stockStatus = productData["stock_status"];
             }
 
             bool manageStock = false;
-            if (productDetails is Map &&
-                productDetails.containsKey("manage_stock") &&
-                productDetails["manage_stock"] is bool) {
-              manageStock = productDetails["manage_stock"];
+            if (productData.containsKey("manage_stock") &&
+                productData["manage_stock"] is bool) {
+              manageStock = productData["manage_stock"];
             }
 
             int stockQuantity;
-            if (productDetails is Map &&
-                productDetails.containsKey("stock_quantity") &&
-                productDetails["stock_quantity"] is int) {
-              stockQuantity = productDetails["stock_quantity"];
+            if (productData.containsKey("stock_quantity") &&
+                productData["stock_quantity"] is int) {
+              stockQuantity = productData["stock_quantity"];
             }
 
-            bool backordersAllowed = false;
-            if (productDetails is Map &&
-                productDetails.containsKey("backorders_allowed") &&
-                productDetails["backorders_allowed"] is bool) {
-              backordersAllowed = productDetails["backorders_allowed"];
+            String backorders;
+            if (productData.containsKey("backorders") &&
+                productData["backorders"] is String &&
+                productData["backorders"].isNotEmpty) {
+              backorders = productData["backorders"];
             }
 
-            String backorders = "";
-            if (productDetails is Map &&
-                productDetails.containsKey("backorders") &&
-                productDetails["backorders"] is String &&
-                productDetails["backorders"].isNotEmpty) {
-              backorders = productDetails["backorders"];
-            }
-
-            Navigator.push(
+            String result = await Navigator.push(
               context,
               MaterialPageRoute(
                 builder: (context) => EditProductInventoryPage(
+                  baseurl: widget.baseurl,
+                  username: widget.username,
+                  password: widget.password,
+                  id: widget.id,
+                  sku: sku,
                   stockStatus: stockStatus,
                   manageStock: manageStock,
                   stockQuantity: stockQuantity,
-                  backordersAllowed: backordersAllowed,
                   backorders: backorders,
                 ),
               ),
             );
+            if (result is String) {
+              scaffoldKey.currentState.showSnackBar(
+                SnackBar(
+                  content: Text(result.toString()),
+                  duration: Duration(seconds: 3),
+                ),
+              );
+              fetchProductDetails();
+            }
           },
         );
       }
@@ -763,69 +864,138 @@ class _ProductDetailsPageState extends State<ProductDetailsPage> {
     if (isProductDataReady) {
       List<Widget> productShippingWidgetData = [];
 
-      if (productDetails.containsKey("weight") &&
-          productDetails["weight"] is String &&
-          productDetails["weight"].isNotEmpty) {
+      if (productData.containsKey("weight") &&
+          productData["weight"] is String &&
+          productData["weight"].isNotEmpty) {
         productShippingWidgetData.add(
-          _getItemRow("Weight: ", productDetails["weight"]),
+          _getItemRow("Weight: ", productData["weight"]),
         );
       }
 
-      if (productDetails.containsKey("dimensions") &&
-          productDetails["dimensions"] is Map) {
-        if (productDetails["dimensions"].containsKey("length") &&
-            productDetails["dimensions"]["length"] is String &&
-            productDetails["dimensions"]["length"].isNotEmpty) {
+      if (productData.containsKey("dimensions") &&
+          productData["dimensions"] is Map) {
+        if (productData["dimensions"].containsKey("length") &&
+            productData["dimensions"]["length"] is String &&
+            productData["dimensions"]["length"].isNotEmpty) {
           productShippingWidgetData.add(
-            _getItemRow("Length: ", productDetails["dimensions"]["length"]),
+            _getItemRow("Length: ", productData["dimensions"]["length"]),
           );
         }
 
-        if (productDetails["dimensions"].containsKey("width") &&
-            productDetails["dimensions"]["width"] is String &&
-            productDetails["dimensions"]["width"].isNotEmpty) {
+        if (productData["dimensions"].containsKey("width") &&
+            productData["dimensions"]["width"] is String &&
+            productData["dimensions"]["width"].isNotEmpty) {
           productShippingWidgetData.add(
-            _getItemRow("Width: ", productDetails["dimensions"]["width"]),
+            _getItemRow("Width: ", productData["dimensions"]["width"]),
           );
         }
 
-        if (productDetails["dimensions"].containsKey("height") &&
-            productDetails["dimensions"]["height"] is String &&
-            productDetails["dimensions"]["height"].isNotEmpty) {
+        if (productData["dimensions"].containsKey("height") &&
+            productData["dimensions"]["height"] is String &&
+            productData["dimensions"]["height"].isNotEmpty) {
           productShippingWidgetData.add(
-            _getItemRow("Height: ", productDetails["dimensions"]["height"]),
+            _getItemRow("Height: ", productData["dimensions"]["height"]),
           );
         }
       }
 
-      if (productDetails.containsKey("shipping_required") &&
-          productDetails["shipping_required"] is bool) {
+      if (productData.containsKey("shipping_required") &&
+          productData["shipping_required"] is bool) {
         productShippingWidgetData.add(
           _getItemRow("Shipping required: ",
-              productDetails["shipping_required"] ? "Yes" : "No"),
+              productData["shipping_required"] ? "Yes" : "No"),
         );
       }
 
-      if (productDetails.containsKey("shipping_taxable") &&
-          productDetails["shipping_taxable"] is bool) {
+      if (productData.containsKey("shipping_taxable") &&
+          productData["shipping_taxable"] is bool) {
         productShippingWidgetData.add(
           _getItemRow("Shipping taxable: ",
-              productDetails["shipping_taxable"] ? "Yes" : "No"),
+              productData["shipping_taxable"] ? "Yes" : "No"),
         );
       }
 
-      if (productDetails.containsKey("shipping_class") &&
-          productDetails["shipping_class"] is String &&
-          productDetails["shipping_class"].isNotEmpty) {
+      if (productData.containsKey("shipping_class") &&
+          productData["shipping_class"] is String &&
+          productData["shipping_class"].isNotEmpty) {
         productShippingWidgetData.add(
-          _getItemRow("Shipping class: ",
-              productDetails["shipping_class"] ? "Yes" : "No"),
+          _getItemRow(
+              "Shipping class: ", productData["shipping_class"] ? "Yes" : "No"),
         );
       }
 
       if (productShippingWidgetData.isNotEmpty) {
-        productShippingWidget =
-            _getExpansionTile("Shipping", productShippingWidgetData);
+        productShippingWidget = _getExpansionTile(
+          "Shipping",
+          productShippingWidgetData,
+          isTappable: true,
+          onTap: () async {
+            String weight;
+            if (productData is Map &&
+                productData.containsKey("weight") &&
+                productData["weight"] is String &&
+                productData["weight"].isNotEmpty) {
+              weight = productData["weight"];
+            }
+
+            String length;
+            String width;
+            String height;
+            if (productData.containsKey("dimensions") &&
+                productData["dimensions"] is Map) {
+              if (productData["dimensions"].containsKey("length") &&
+                  productData["dimensions"]["length"] is String &&
+                  productData["dimensions"]["length"].isNotEmpty) {
+                length = productData["dimensions"]["length"];
+              }
+
+              if (productData["dimensions"].containsKey("width") &&
+                  productData["dimensions"]["width"] is String &&
+                  productData["dimensions"]["width"].isNotEmpty) {
+                width = productData["dimensions"]["width"];
+              }
+
+              if (productData["dimensions"].containsKey("height") &&
+                  productData["dimensions"]["height"] is String &&
+                  productData["dimensions"]["height"].isNotEmpty) {
+                height = productData["dimensions"]["height"];
+              }
+            }
+
+            String shippingClass;
+            if (productData.containsKey("shipping_class") &&
+                productData["shipping_class"] is String &&
+                productData["shipping_class"].isNotEmpty) {
+              shippingClass = productData["shipping_class"];
+            }
+
+            String result = await Navigator.push(
+              context,
+              MaterialPageRoute(
+                builder: (context) => EditProductShippingPage(
+                  baseurl: widget.baseurl,
+                  username: widget.username,
+                  password: widget.password,
+                  id: widget.id,
+                  weight: weight,
+                  length: length,
+                  width: width,
+                  height: height,
+                  shippingClass: shippingClass,
+                ),
+              ),
+            );
+            if (result is String) {
+              scaffoldKey.currentState.showSnackBar(
+                SnackBar(
+                  content: Text(result.toString()),
+                  duration: Duration(seconds: 3),
+                ),
+              );
+              fetchProductDetails();
+            }
+          },
+        );
       }
     }
     return productShippingWidget;
@@ -837,26 +1007,26 @@ class _ProductDetailsPageState extends State<ProductDetailsPage> {
     if (isProductDataReady) {
       List<Widget> productReviewsWidgetData = [];
 
-      if (productDetails.containsKey("reviews_allowed") &&
-          productDetails["reviews_allowed"] is bool) {
+      if (productData.containsKey("reviews_allowed") &&
+          productData["reviews_allowed"] is bool) {
         productReviewsWidgetData.add(
           _getItemRow("Reviews allowed: ",
-              (productDetails["reviews_allowed"] ? "Yes" : "No")),
+              (productData["reviews_allowed"] ? "Yes" : "No")),
         );
       }
 
-      if (productDetails.containsKey("average_rating") &&
-          productDetails["average_rating"] is String &&
-          productDetails["average_rating"].isNotEmpty) {
+      if (productData.containsKey("average_rating") &&
+          productData["average_rating"] is String &&
+          productData["average_rating"].isNotEmpty) {
         productReviewsWidgetData.add(
-          _getItemRow("Average rating: ", productDetails["average_rating"]),
+          _getItemRow("Average rating: ", productData["average_rating"]),
         );
       }
 
-      if (productDetails.containsKey("rating_count") &&
-          productDetails["rating_count"] is int) {
+      if (productData.containsKey("rating_count") &&
+          productData["rating_count"] is int) {
         productReviewsWidgetData.add(
-          _getItemRow("Rating count: ", "${productDetails["rating_count"]}"),
+          _getItemRow("Rating count: ", "${productData["rating_count"]}"),
         );
       }
 
@@ -872,22 +1042,22 @@ class _ProductDetailsPageState extends State<ProductDetailsPage> {
     Widget productCategoriesWidget = SizedBox.shrink();
 
     if (isProductDataReady &&
-        productDetails.containsKey("categories") &&
-        productDetails["categories"] is List &&
-        productDetails["categories"].isNotEmpty) {
+        productData.containsKey("categories") &&
+        productData["categories"] is List &&
+        productData["categories"].isNotEmpty) {
       List<Widget> productCategoriesWidgetData = [
         Wrap(
           spacing: 5,
           children: <Widget>[
-            for (var i = 0; i < productDetails["categories"].length; i++)
-              if (productDetails["categories"][i].containsKey("name") &&
-                  productDetails["categories"][i]["name"] is String &&
-                  productDetails["categories"][i]["name"].isNotEmpty)
+            for (var i = 0; i < productData["categories"].length; i++)
+              if (productData["categories"][i].containsKey("name") &&
+                  productData["categories"][i]["name"] is String &&
+                  productData["categories"][i]["name"].isNotEmpty)
                 Container(
                   height: 40,
                   child: Chip(
                     label: Text(
-                      productDetails["categories"][i]["name"],
+                      productData["categories"][i]["name"],
                       style: Theme.of(context).textTheme.body1,
                     ),
                     shape: RoundedRectangleBorder(
@@ -913,29 +1083,29 @@ class _ProductDetailsPageState extends State<ProductDetailsPage> {
     List<Widget> productAttributesWidgetData = [];
 
     if (isProductDataReady &&
-        productDetails.containsKey("attributes") &&
-        productDetails["attributes"] is List &&
-        productDetails["attributes"].isNotEmpty) {
-      for (int i = 0; i < productDetails["attributes"].length; i++) {
-        if (productDetails["attributes"][i] is Map &&
-            productDetails["attributes"][i].containsKey("name") &&
-            productDetails["attributes"][i]["name"] is String &&
-            productDetails["attributes"][i]["name"].isNotEmpty) {
-          String attributeName = "${productDetails["attributes"][i]["name"]}: ";
+        productData.containsKey("attributes") &&
+        productData["attributes"] is List &&
+        productData["attributes"].isNotEmpty) {
+      for (int i = 0; i < productData["attributes"].length; i++) {
+        if (productData["attributes"][i] is Map &&
+            productData["attributes"][i].containsKey("name") &&
+            productData["attributes"][i]["name"] is String &&
+            productData["attributes"][i]["name"].isNotEmpty) {
+          String attributeName = "${productData["attributes"][i]["name"]}: ";
           String attributeOptions = "";
 
-          if (productDetails["attributes"][i].containsKey("options") &&
-              productDetails["attributes"][i]["options"] is List &&
-              productDetails["attributes"][i]["options"].isNotEmpty) {
+          if (productData["attributes"][i].containsKey("options") &&
+              productData["attributes"][i]["options"] is List &&
+              productData["attributes"][i]["options"].isNotEmpty) {
             for (int j = 0;
-                j < productDetails["attributes"][i]["options"].length;
+                j < productData["attributes"][i]["options"].length;
                 j++) {
-              if (productDetails["attributes"][i]["options"][j] is String &&
-                  productDetails["attributes"][i]["options"][j].isNotEmpty) {
+              if (productData["attributes"][i]["options"][j] is String &&
+                  productData["attributes"][i]["options"][j].isNotEmpty) {
                 attributeOptions +=
-                    (j == productDetails["attributes"][i]["options"].length - 1
-                        ? productDetails["attributes"][i]["options"][j]
-                        : "${productDetails["attributes"][i]["options"][j]}, ");
+                    (j == productData["attributes"][i]["options"].length - 1
+                        ? productData["attributes"][i]["options"][j]
+                        : "${productData["attributes"][i]["options"][j]}, ");
               }
             }
           }

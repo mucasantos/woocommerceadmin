@@ -99,6 +99,8 @@ class _OrdersListPageState extends State<OrdersListPage> {
                                         username: widget.username,
                                         password: widget.password,
                                         id: ordersListData[index]["id"],
+                                        orderData: ordersListData[index],
+                                        preFetch: false,
                                       ),
                                     ),
                                   );

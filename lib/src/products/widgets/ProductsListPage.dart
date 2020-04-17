@@ -101,6 +101,8 @@ class _ProductsListPageState extends State<ProductsListPage> {
                                         username: widget.username,
                                         password: widget.password,
                                         id: productsListData[index]["id"],
+                                        productData: productsListData[index],
+                                        preFetch: false,
                                       ),
                                     ),
                                   );

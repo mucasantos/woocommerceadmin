@@ -1,5 +1,4 @@
 import 'dart:io';
-
 import 'package:extended_image/extended_image.dart';
 import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
@@ -20,21 +19,25 @@ class OrderDetailsPage extends StatefulWidget {
   final String username;
   final String password;
   final int id;
+  final Map<String, dynamic> orderData;
+  final bool preFetch;
 
-  OrderDetailsPage(
-      {Key key,
-      @required this.baseurl,
-      @required this.username,
-      @required this.password,
-      @required this.id})
-      : super(key: key);
+  OrderDetailsPage({
+    Key key,
+    @required this.baseurl,
+    @required this.username,
+    @required this.password,
+    @required this.id,
+    this.orderData,
+    this.preFetch,
+  }) : super(key: key);
 
   @override
   _OrderDetailsPageState createState() => _OrderDetailsPageState();
 }
 
 class _OrderDetailsPageState extends State<OrderDetailsPage> {
-  bool isOrderDataReady = false;
+  bool isOrderDataReady = true;
   bool isOrderDataError = false;
   String orderDataError;
   Map orderData = {};
@@ -53,8 +56,19 @@ class _OrderDetailsPageState extends State<OrderDetailsPage> {
 
   @override
   void initState() {
+    if (widget.preFetch ?? true) {
+      fetchOrderDetails();
+    } else {
+      if (widget.orderData is Map &&
+          widget.orderData.containsKey("id") &&
+          widget.orderData["id"] is int) {
+        orderData = widget.orderData;
+      } else {
+        fetchOrderDetails();
+      }
+    }
+    fetchOrderNotes();
     super.initState();
-    fetchOrderDetails();
   }
 
   @override
@@ -119,7 +133,6 @@ class _OrderDetailsPageState extends State<OrderDetailsPage> {
             isOrderDataReady = true;
             isOrderDataError = false;
           });
-          fetchOrderNotes();
         } else {
           setState(() {
             isOrderDataReady = false;

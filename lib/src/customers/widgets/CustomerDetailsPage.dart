@@ -1,6 +1,5 @@
 import 'dart:convert';
 import 'dart:io';
-
 import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
@@ -14,14 +13,18 @@ class CustomerDetailsPage extends StatefulWidget {
   final String username;
   final String password;
   final int id;
+  final Map<String, dynamic> customerData;
+  final bool preFetch;
 
-  CustomerDetailsPage(
-      {Key key,
-      @required this.baseurl,
-      @required this.username,
-      @required this.password,
-      @required this.id})
-      : super(key: key);
+  CustomerDetailsPage({
+    Key key,
+    @required this.baseurl,
+    @required this.username,
+    @required this.password,
+    @required this.id,
+    this.customerData,
+    this.preFetch,
+  }) : super(key: key);
 
   @override
   _CustomerDetailsPageState createState() => _CustomerDetailsPageState();
@@ -29,7 +32,7 @@ class CustomerDetailsPage extends StatefulWidget {
 
 class _CustomerDetailsPageState extends State<CustomerDetailsPage> {
   Map customerData = Map();
-  bool isCustomerDataReady = false;
+  bool isCustomerDataReady = true;
   bool isCustomerDataError = false;
   String customerDataError;
 
@@ -39,8 +42,18 @@ class _CustomerDetailsPageState extends State<CustomerDetailsPage> {
 
   @override
   void initState() {
+    if (widget.preFetch ?? true) {
+      fetchCustomerDetails();
+    } else {
+      if (widget.customerData is Map &&
+          widget.customerData.containsKey("id") &&
+          widget.customerData["id"] is int) {
+        customerData = widget.customerData;
+      } else {
+        fetchCustomerDetails();
+      }
+    }
     super.initState();
-    fetchCustomerDetails();
   }
 
   @override
@@ -130,10 +143,11 @@ class _CustomerDetailsPageState extends State<CustomerDetailsPage> {
         });
       }
     } on SocketException catch (_) {
-       setState(() {
+      setState(() {
         isCustomerDataReady = false;
         isCustomerDataError = true;
-        customerDataError = "Failed to fetch customer details. Error: Netwok not reachable";
+        customerDataError =
+            "Failed to fetch customer details. Error: Netwok not reachable";
       });
     } catch (e) {
       setState(() {
