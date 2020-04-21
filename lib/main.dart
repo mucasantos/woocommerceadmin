@@ -1,13 +1,15 @@
 import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
 import 'package:shared_preferences/shared_preferences.dart';
-import 'package:woocommerceadmin/src/common/widgets/MyDrawer.dart';
-import 'package:woocommerceadmin/src/connections/widgets/AddConnectionPage.dart';
-import 'package:woocommerceadmin/src/customers/widgets/CustomersListPage.dart';
+import 'package:woocommerceadmin/src/common/widgets/my_drawer.dart';
+import 'package:woocommerceadmin/src/connections/components/add_connection/screens/add_connection_screen.dart';
+import 'package:woocommerceadmin/src/customers/components/customers_list/screens/customers_list_screen.dart';
 import 'package:woocommerceadmin/src/db/ConnectionDBProvider.dart';
 import 'package:woocommerceadmin/src/db/models/Connection.dart';
-import 'package:woocommerceadmin/src/orders/widgets/OrdersListPage.dart';
-import 'package:woocommerceadmin/src/products/widgets/ProductsListPage.dart';
-import 'package:woocommerceadmin/src/reports/widgets/ReportsPage.dart';
+import 'package:woocommerceadmin/src/orders/components/orders_list/screens/orders_list_screen.dart';
+import 'package:woocommerceadmin/src/products/components/products_list/screens/products_list_screen.dart';
+import 'package:woocommerceadmin/src/products/models/products.dart';
+import 'package:woocommerceadmin/src/reports/components/reports/screens/reports_screen.dart';
 import 'package:woocommerceadmin/src/config.dart';
 import 'package:flutter_spinkit/flutter_spinkit.dart';
 
@@ -17,34 +19,45 @@ class MyApp extends StatelessWidget {
   // This widget is the root of your application.
   @override
   Widget build(BuildContext context) {
-    return MaterialApp(
-      title: 'Woocommerce Admin',
-      theme: ThemeData(
-        primarySwatch: Colors.purple,
-        textTheme: TextTheme(
-            headline: TextStyle(
-              fontSize: 24.0,
-              fontWeight: FontWeight.bold,
-              // backgroundColor: Colors.purple,
-              // color: Colors.white
-            ),
-            subhead: TextStyle(
-              fontSize: 18.0,
-              fontWeight: FontWeight.bold,
-            ),
-            body1: TextStyle(
-              fontSize: 14,
-            ),
-            body2: TextStyle(
-              fontSize: 16,
-            ),
-            button: TextStyle(
-              color: Colors.white,
-              fontWeight: FontWeight.bold,
-              fontSize: 16,
-            )),
+    return MultiProvider(
+      providers: [
+        ChangeNotifierProvider(
+          create: (context) => Products(),
+        ),
+      ],
+      child: MaterialApp(
+        title: 'Woocommerce Admin',
+        theme: ThemeData(
+          primarySwatch: Colors.purple,
+          textTheme: TextTheme(
+              headline: TextStyle(
+                fontSize: 24.0,
+                fontWeight: FontWeight.bold,
+                // backgroundColor: Colors.purple,
+                // color: Colors.white
+              ),
+              subhead: TextStyle(
+                fontSize: 18.0,
+                fontWeight: FontWeight.bold,
+              ),
+              body1: TextStyle(
+                fontSize: 14,
+              ),
+              body2: TextStyle(
+                fontSize: 16,
+              ),
+              button: TextStyle(
+                color: Colors.white,
+                fontWeight: FontWeight.bold,
+                fontSize: 16,
+              )),
+        ),
+        home: HomePage(),
+        // routes: {
+        //       ProductsListScreen.routeName: (context) => ProductsListScreen(),
+        //       ProductDetailsScreen.routeName: (context) => ProductDetailsScreen(),
+        //     }),
       ),
-      home: HomePage(),
     );
   }
 }
@@ -126,7 +139,7 @@ class _HomePageState extends State<HomePage> {
               username: _selectedConnection.username,
               password: _selectedConnection.password,
             ),
-            ProductsListPage(
+            ProductsListScreen(
               baseurl: _selectedConnection.baseurl,
               username: _selectedConnection.username,
               password: _selectedConnection.password,
