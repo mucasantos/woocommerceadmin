@@ -22,11 +22,11 @@ class ProductDetailsShippingWidget extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final Product productData =
-        Provider.of<Products>(context).findProductById(this.id);
+        Provider.of<Products>(context).getProductById(this.id);
     Widget productShippingWidget = SizedBox.shrink();
     List<Widget> productShippingWidgetData = [];
 
-    if (productData?.weight is String) {
+    if (productData?.weight is String && productData.weight.isNotEmpty) {
       productShippingWidgetData.add(
         ProductDetailsWidgetsHelper.getItemRow(
           context: context,

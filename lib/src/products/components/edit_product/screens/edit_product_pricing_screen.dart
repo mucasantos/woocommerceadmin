@@ -53,7 +53,7 @@ class _EditProductPricingScreenState extends State<EditProductPricingScreen> {
   void didChangeDependencies() {
     if (_isInit) {
       final Product productData = Provider.of<Products>(context, listen: false)
-          .findProductById(widget.id);
+          .getProductById(widget.id);
       regularPrice = productData?.regularPrice ?? "";
       salePrice = productData?.salePrice ?? "";
       dateOnSaleFrom = productData?.dateOnSaleFrom;

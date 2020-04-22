@@ -42,7 +42,7 @@ class _EditProductInventoryScreenState
   void didChangeDependencies() {
     if (_isInit) {
       final Product productData = Provider.of<Products>(context, listen: false)
-          .findProductById(widget.id);
+          .getProductById(widget.id);
       sku = productData?.sku ?? "";
       stockStatus = productData?.stockStatus ?? "";
       manageStock = productData?.manageStock ?? false;

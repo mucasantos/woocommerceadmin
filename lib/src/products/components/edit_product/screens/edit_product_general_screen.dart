@@ -44,7 +44,7 @@ class _EditProductGeneralScreenState extends State<EditProductGeneralScreen> {
   void didChangeDependencies() {
     if (_isInit) {
       final Product productData = Provider.of<Products>(context, listen: false)
-          .findProductById(widget.id);
+          .getProductById(widget.id);
       slug = productData?.slug ?? "";
       type = productData?.type ?? "";
       status = productData?.status ?? "";

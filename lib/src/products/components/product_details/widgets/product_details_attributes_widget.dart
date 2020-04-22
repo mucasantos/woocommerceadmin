@@ -20,7 +20,7 @@ class ProductDetailsAttributesWidget extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final Product productData =
-        Provider.of<Products>(context).findProductById(this.id);
+        Provider.of<Products>(context).getProductById(this.id);
     Widget productAttributesWidget = SizedBox.shrink();
     List<Widget> productAttributesWidgetData = [];
 

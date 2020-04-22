@@ -4,12 +4,15 @@ import 'dart:io';
 import 'package:flutter_spinkit/flutter_spinkit.dart';
 import 'package:http/http.dart' as http;
 import 'package:intl/intl.dart';
+import 'package:provider/provider.dart';
 import 'dart:convert';
 import 'package:recase/recase.dart';
 import 'package:woocommerceadmin/src/orders/components/order_details/screens/order_details_screen.dart';
 import 'package:woocommerceadmin/src/orders/components/orders_list/widgets/orders_list_filters_modal.dart';
 import 'package:barcode_scan/barcode_scan.dart';
-
+import 'package:woocommerceadmin/src/orders/components/orders_list/widgets/orders_list_widget.dart';
+import 'package:woocommerceadmin/src/orders/models/order.dart';
+import 'package:woocommerceadmin/src/orders/models/orders.dart';
 
 class OrdersListPage extends StatefulWidget {
   final String baseurl;
@@ -28,12 +31,11 @@ class OrdersListPage extends StatefulWidget {
 }
 
 class _OrdersListPageState extends State<OrdersListPage> {
-  List ordersListData = [];
-  int page = 1;
-  bool hasMoreToLoad = true;
-  bool isListLoading = false;
-  bool isListError = false;
-  String listError;
+  int _page = 1;
+  bool _hasMoreToLoad = true;
+  bool _isListLoading = false;
+  bool _isListError = false;
+  String _listError;
 
   bool isSearching = false;
   String searchValue = "";
@@ -43,13 +45,11 @@ class _OrdersListPageState extends State<OrdersListPage> {
   Map<String, bool> orderStatusOptions = {};
 
   final GlobalKey<ScaffoldState> scaffoldKey = new GlobalKey<ScaffoldState>();
-  final GlobalKey<RefreshIndicatorState> _refreshIndicatorKey =
-      new GlobalKey<RefreshIndicatorState>();
 
   @override
   void initState() {
-    super.initState();
     fetchOrdersList();
+    super.initState();
   }
 
   @override
@@ -68,94 +68,53 @@ class _OrdersListPageState extends State<OrdersListPage> {
     return Scaffold(
       key: scaffoldKey,
       appBar: _myAppBar(),
-      body: isListError && ordersListData.isEmpty
-          ? _mainErrorWidget()
-          : RefreshIndicator(
-              key: _refreshIndicatorKey,
-              onRefresh: handleRefresh,
-              child: Column(
-                children: <Widget>[
-                  Expanded(
-                    child: NotificationListener<ScrollNotification>(
-                      onNotification: (ScrollNotification scrollInfo) {
-                        if (hasMoreToLoad &&
-                            !isListLoading &&
-                            !isListError &&
-                            scrollInfo.metrics.pixels ==
-                                scrollInfo.metrics.maxScrollExtent) {
-                          handleLoadMore();
-                        }
-                      },
-                      child: ListView.builder(
-                          itemCount: ordersListData.length,
-                          itemBuilder: (BuildContext context, int index) {
-                            return Card(
-                              child: InkWell(
-                                onTap: () {
-                                  Navigator.push(
-                                    context,
-                                    MaterialPageRoute(
-                                      builder: (context) => OrderDetailsPage(
-                                        baseurl: widget.baseurl,
-                                        username: widget.username,
-                                        password: widget.password,
-                                        id: ordersListData[index]["id"],
-                                      ),
-                                    ),
-                                  );
-                                },
-                                child: Row(
-                                    mainAxisAlignment: MainAxisAlignment.start,
-                                    mainAxisSize: MainAxisSize.max,
-                                    crossAxisAlignment:
-                                        CrossAxisAlignment.center,
-                                    children: <Widget>[
-                                      Expanded(
-                                        child: Padding(
-                                          padding: const EdgeInsets.all(10.0),
-                                          child: Column(
-                                              mainAxisAlignment:
-                                                  MainAxisAlignment.start,
-                                              mainAxisSize: MainAxisSize.min,
-                                              crossAxisAlignment:
-                                                  CrossAxisAlignment.start,
-                                              children: <Widget>[
-                                                _orderDate(
-                                                    ordersListData[index]),
-                                                _orderIdAndBillingName(
-                                                    ordersListData[index]),
-                                                _orderStatus(
-                                                    ordersListData[index]),
-                                                _orderTotal(
-                                                    ordersListData[index])
-                                              ]),
-                                        ),
-                                      )
-                                    ]),
-                              ),
-                            );
-                          }),
-                    ),
-                  ),
-                  if (isListLoading)
-                    Container(
-                      height: 60,
-                      child: Center(
-                        child: SpinKitPulse(
-                          color: Colors.purple,
-                          size: 50,
+      body: Consumer<Orders>(
+        builder: (context, ordersListData, _) {
+          return _isListError && ordersListData.orders.isEmpty
+              ? _mainErrorWidget()
+              : RefreshIndicator(
+                  onRefresh: handleRefresh,
+                  child: Column(
+                    children: <Widget>[
+                      Expanded(
+                        child: NotificationListener<ScrollNotification>(
+                          onNotification: (ScrollNotification scrollInfo) {
+                            if (_hasMoreToLoad &&
+                                !_isListLoading &&
+                                !_isListError &&
+                                scrollInfo.metrics.pixels ==
+                                    scrollInfo.metrics.maxScrollExtent) {
+                              handleLoadMore();
+                            }
+                          },
+                          child: OrdersListWidget(
+                            baseurl: widget.baseurl,
+                            username: widget.username,
+                            password: widget.password,
+                          ),
                         ),
                       ),
-                    ),
-                ],
-              ),
-            ),
+                      if (_isListLoading)
+                        Container(
+                          height: 60,
+                          child: Center(
+                            child: SpinKitPulse(
+                              color: Colors.purple,
+                              size: 50,
+                            ),
+                          ),
+                        ),
+                    ],
+                  ),
+                );
+        },
+      ),
     );
   }
 
   Future<void> fetchOrdersList() async {
     String url =
-        "${widget.baseurl}/wp-json/wc/v3/orders?page=$page&per_page=20&consumer_key=${widget.username}&consumer_secret=${widget.password}";
+        "${widget.baseurl}/wp-json/wc/v3/orders?page=$_page&per_page=20&consumer_key=${widget.username}&consumer_secret=${widget.password}";
     if (searchValue is String && searchValue.isNotEmpty) {
       url += "&search=$searchValue";
     }
@@ -173,35 +132,40 @@ class _OrdersListPageState extends State<OrdersListPage> {
       });
     }
     setState(() {
-      isListLoading = true;
-      isListError = false;
+      _isListLoading = true;
+      _isListError = false;
     });
 
     http.Response response;
     try {
       response = await http.get(url);
       if (response.statusCode == 200) {
-        if (json.decode(response.body) is List) {
-          if (json.decode(response.body).isNotEmpty) {
+        dynamic responseBody = json.decode(response.body);
+        if (responseBody is List) {
+          if (responseBody.isNotEmpty) {
+            final List<Order> loadedOrders = [];
+            responseBody.forEach((item) {
+              loadedOrders.add(Order.fromJson(item));
+            });
+            Provider.of<Orders>(context, listen: false).addOrders(loadedOrders);
             setState(() {
-              hasMoreToLoad = true;
-              ordersListData.addAll(json.decode(response.body));
-              isListLoading = false;
-              isListError = false;
+              _hasMoreToLoad = true;
+              _isListLoading = false;
+              _isListError = false;
             });
           } else {
             setState(() {
-              hasMoreToLoad = false;
-              isListLoading = false;
-              isListError = false;
+              _hasMoreToLoad = false;
+              _isListLoading = false;
+              _isListError = false;
             });
           }
         } else {
           setState(() {
-            hasMoreToLoad = true;
-            isListLoading = false;
-            isListError = true;
-            listError = "Failed to fetch orders";
+            _hasMoreToLoad = true;
+            _isListLoading = false;
+            _isListError = true;
+            _listError = "Failed to fetch orders";
           });
         }
       } else {
@@ -212,40 +176,41 @@ class _OrdersListPageState extends State<OrdersListPage> {
           errorCode = json.decode(response.body)["code"];
         }
         setState(() {
-          hasMoreToLoad = true;
-          isListLoading = false;
-          isListError = true;
-          listError = "Failed to fetch orders. Error: $errorCode";
+          _hasMoreToLoad = true;
+          _isListLoading = false;
+          _isListError = true;
+          _listError = "Failed to fetch orders. Error: $errorCode";
         });
       }
     } on SocketException catch (_) {
       setState(() {
-        hasMoreToLoad = true;
-        isListLoading = false;
-        isListError = true;
-        listError = "Failed to fetch orders. Error: Network not reachable";
+        _hasMoreToLoad = true;
+        _isListLoading = false;
+        _isListError = true;
+        _listError = "Failed to fetch orders. Error: Network not reachable";
       });
     } catch (e) {
       setState(() {
-        hasMoreToLoad = true;
-        isListLoading = false;
-        isListError = true;
-        listError = "Failed to fetch orders. Error: $e";
+        _hasMoreToLoad = true;
+        _isListLoading = false;
+        _isListError = true;
+        _listError = "Failed to fetch orders. Error: $e";
       });
+      throw e;
     }
   }
 
   Future<void> handleLoadMore() async {
     setState(() {
-      page++;
+      _page++;
     });
     await fetchOrdersList();
   }
 
   Future<void> handleRefresh() async {
     setState(() {
-      page = 1;
-      ordersListData = [];
+      _page = 1;
+      Provider.of<Orders>(context, listen: false).clearOrderssList();
     });
     await fetchOrdersList();
   }
@@ -388,7 +353,7 @@ class _OrdersListPageState extends State<OrdersListPage> {
 
   Widget _mainErrorWidget() {
     Widget mainErrorWidget = SizedBox.shrink();
-    if (isListError && listError is String && listError.isNotEmpty)
+    if (_isListError && _listError is String && _listError.isNotEmpty)
       mainErrorWidget = Container(
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
@@ -397,7 +362,7 @@ class _OrdersListPageState extends State<OrdersListPage> {
             Padding(
               padding: const EdgeInsets.fromLTRB(10, 20, 10, 20),
               child: Text(
-                listError ?? "",
+                _listError ?? "",
                 textAlign: TextAlign.center,
               ),
             ),
@@ -468,76 +433,4 @@ class _OrdersListPageState extends State<OrdersListPage> {
   //   }
   // }
 
-  Widget _orderDate(Map orderDetailsMap) {
-    Widget orderDateWidget = SizedBox();
-    if (orderDetailsMap.containsKey("date_created") &&
-        orderDetailsMap["date_created"] is String)
-      orderDateWidget = Text(
-        DateFormat("EEEE, dd/MM/yyyy h:mm:ss a").format(
-          DateTime.parse(orderDetailsMap["date_created"]),
-        ),
-      );
-    return orderDateWidget;
-  }
-
-  Widget _orderIdAndBillingName(Map orderDetailsMap) {
-    Widget orderIdAndBillingNameWidget = SizedBox();
-    String orderId = "";
-    String billingName = "";
-    if (orderDetailsMap.containsKey("id") && orderDetailsMap["id"] is int) {
-      orderId = "#${orderDetailsMap["id"]}";
-    }
-    if (orderDetailsMap.containsKey("billing") &&
-        orderDetailsMap["billing"] is Map) {
-      if (orderDetailsMap["billing"].containsKey("first_name") &&
-          orderDetailsMap["billing"]["first_name"] is String) {
-        billingName =
-            billingName + orderDetailsMap["billing"]["first_name"].toString();
-      }
-      if (orderDetailsMap["billing"].containsKey("last_name") &&
-          orderDetailsMap["billing"]["last_name"] is String) {
-        if (billingName.isNotEmpty) {
-          billingName = billingName + " ";
-        }
-        billingName =
-            billingName + orderDetailsMap["billing"]["last_name"].toString();
-      }
-    }
-    orderIdAndBillingNameWidget = Text(
-      "$orderId $billingName",
-      style: Theme.of(context)
-          .textTheme
-          .body1
-          .copyWith(fontSize: 20.0, fontWeight: FontWeight.bold),
-    );
-    return orderIdAndBillingNameWidget;
-  }
-
-  Widget _orderStatus(Map orderDetailsMap) {
-    Widget orderStatusWidget = SizedBox();
-    if (orderDetailsMap.containsKey("status") &&
-        orderDetailsMap["status"] is String)
-      orderStatusWidget = Text(
-        "Status: " + orderDetailsMap["status"].toString().titleCase,
-      );
-    return orderStatusWidget;
-  }
-
-  Widget _orderTotal(Map orderDetailsMap) {
-    Widget orderTotalWidget = SizedBox();
-    if (orderDetailsMap.containsKey("total") &&
-        orderDetailsMap["total"] is String)
-      orderTotalWidget = Text(
-        "Total: " +
-            ((orderDetailsMap.containsKey("currency_symbol") &&
-                    orderDetailsMap["currency_symbol"] is String)
-                ? orderDetailsMap["currency_symbol"]
-                : (orderDetailsMap.containsKey("currency") &&
-                        orderDetailsMap["currency"] is String)
-                    ? orderDetailsMap["currency"]
-                    : "") +
-            orderDetailsMap["total"],
-      );
-    return orderTotalWidget;
-  }
 }

@@ -30,6 +30,7 @@ class _EditProductShippingScreenState extends State<EditProductShippingScreen> {
   bool _isInit = true;
   bool _isLoading = false;
   final scaffoldKey = new GlobalKey<ScaffoldState>();
+
   String weight;
   String length;
   String width;
@@ -39,7 +40,7 @@ class _EditProductShippingScreenState extends State<EditProductShippingScreen> {
   void didChangeDependencies() {
     if (_isInit) {
       final Product productData = Provider.of<Products>(context, listen: false)
-          .findProductById(widget.id);
+          .getProductById(widget.id);
       weight = productData?.weight ?? "";
       length = productData?.dimensions?.length ?? "";
       width = productData?.dimensions?.width ?? "";

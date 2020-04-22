@@ -19,9 +19,6 @@ class ProductItemWidget extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    // return Consumer<Products>(
-    //   builder: (context, productListData, _) {
-    //     final Product productData = productListData.findById(id);
     return Card(
       child: InkWell(
         onTap: () {
@@ -108,7 +105,5 @@ class ProductItemWidget extends StatelessWidget {
             ]),
       ),
     );
-    // },
-    // );
   }
 }

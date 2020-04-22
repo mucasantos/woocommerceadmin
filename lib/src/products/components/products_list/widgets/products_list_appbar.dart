@@ -3,30 +3,29 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:provider/provider.dart';
 import 'package:woocommerceadmin/src/products/components/products_list/widgets/products_list_filters_modal.dart';
-import 'package:woocommerceadmin/src/products/models/products.dart';
+import 'package:woocommerceadmin/src/products/models/products_list_filters.dart';
 
 class ProductsListAppBar {
   static AppBar getAppBar({
     @required BuildContext context,
-    @required String baseurl,
-    @required String username,
-    @required String password,
+    @required Function handleRefresh,
   }) {
-    final Products productsProvider = Provider.of<Products>(context);
+    final ProductsListFilters productsListFilters =
+        Provider.of<ProductsListFilters>(context);
     return AppBar(
       title: Row(
         children: <Widget>[
-          productsProvider.isSearching
+          productsListFilters.isSearching
               ? Padding(
                   padding: const EdgeInsets.only(right: 10),
                   child: Icon(Icons.search),
                 )
               : SizedBox.shrink(),
-          productsProvider.isSearching
+          productsListFilters.isSearching
               ? Expanded(
                   child: TextField(
                     controller: TextEditingController(
-                        text: productsProvider.searchValue),
+                        text: productsListFilters.searchValue),
                     style: TextStyle(color: Colors.white),
                     textInputAction: TextInputAction.search,
                     decoration: InputDecoration(
@@ -38,33 +37,26 @@ class ProductsListAppBar {
                     ),
                     cursorColor: Colors.white,
                     onSubmitted: (String value) {
-                      productsProvider.changeSearchValue(value);
-                      Provider.of<Products>(context, listen: false)
-                          .handleRefresh(
-                        baseurl: baseurl,
-                        username: username,
-                        password: password,
-                      );
+                      productsListFilters.changeSearchValue(value);
+                      handleRefresh();
                     },
                   ),
                 )
               : Expanded(
                   child: Text("Products List"),
                 ),
-          productsProvider.isSearching
+          productsListFilters.isSearching
               ? IconButton(
                   icon: Icon(Icons.center_focus_strong),
                   onPressed: () => scanBarcode(
                     context: context,
-                    baseurl: baseurl,
-                    username: username,
-                    password: password,
+                    handleRefresh: handleRefresh,
                   ),
                 )
               : IconButton(
                   icon: Icon(Icons.search),
                   onPressed: () {
-                    productsProvider.toggleIsSearching();
+                    productsListFilters.toggleIsSearching();
                   },
                 ),
           IconButton(
@@ -75,34 +67,27 @@ class ProductsListAppBar {
                   barrierDismissible: false,
                   builder: (BuildContext context) {
                     return ProductsListFiltersModal(
-                      baseurl: baseurl,
-                      username: username,
-                      password: password,
-                      productsProvider: productsProvider,
+                      handleRefresh: handleRefresh,
+                      // productsListFilters: productsListFilters,
                     );
                   });
             },
           ),
-          productsProvider.isSearching
+          productsListFilters.isSearching
               ? IconButton(
                   icon: Icon(Icons.close),
                   onPressed: () {
                     bool isPreviousSearchValueNotEmpty = false;
-                    if (productsProvider.searchValue.isNotEmpty) {
+                    if (productsListFilters.searchValue.isNotEmpty) {
                       isPreviousSearchValueNotEmpty = true;
                     } else {
                       isPreviousSearchValueNotEmpty = false;
                     }
-                    productsProvider.toggleIsSearching();
-                    productsProvider.changeSearchValue("");
+                    productsListFilters.toggleIsSearching();
+                    productsListFilters.changeSearchValue("");
                     if (isPreviousSearchValueNotEmpty is bool &&
                         isPreviousSearchValueNotEmpty) {
-                      Provider.of<Products>(context, listen: false)
-                          .handleRefresh(
-                        baseurl: baseurl,
-                        username: username,
-                        password: password,
-                      );
+                      handleRefresh();
                     }
                   },
                 )
@@ -114,19 +99,14 @@ class ProductsListAppBar {
 
   static Future<void> scanBarcode({
     @required BuildContext context,
-    @required String baseurl,
-    @required String username,
-    @required String password,
+    @required Function handleRefresh,
   }) async {
-    Products productsProvider = Provider.of<Products>(context, listen: false);
+    ProductsListFilters productsListFilters =
+        Provider.of<ProductsListFilters>(context, listen: false);
     try {
       String barcode = await BarcodeScanner.scan();
-      productsProvider.changeSearchValue(barcode);
-      productsProvider.handleRefresh(
-        baseurl: baseurl,
-        username: username,
-        password: password,
-      );
+      productsListFilters.changeSearchValue(barcode);
+      handleRefresh();
     } on PlatformException catch (e) {
       if (e.code == BarcodeScanner.CameraAccessDenied) {
         Scaffold.of(context).showSnackBar(SnackBar(

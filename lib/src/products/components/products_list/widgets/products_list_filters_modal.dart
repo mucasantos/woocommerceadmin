@@ -1,19 +1,15 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:provider/provider.dart';
 import 'package:recase/recase.dart';
-import 'package:woocommerceadmin/src/products/models/products.dart';
+import 'package:woocommerceadmin/src/products/models/products_list_filters.dart';
 
 class ProductsListFiltersModal extends StatefulWidget {
-  final String baseurl;
-  final String username;
-  final String password;
-  final Products productsProvider;
+  final Function handleRefresh;
+  // final Products productsProvider;
 
   ProductsListFiltersModal({
-    @required this.baseurl,
-    @required this.username,
-    @required this.password,
-    @required this.productsProvider,
+    @required this.handleRefresh,
   });
 
   @override
@@ -22,6 +18,7 @@ class ProductsListFiltersModal extends StatefulWidget {
 }
 
 class _ProductsListFiltersModalState extends State<ProductsListFiltersModal> {
+  bool isInit = true;
   String sortOrderByValue = "date";
   String sortOrderValue = "desc";
 
@@ -35,20 +32,23 @@ class _ProductsListFiltersModalState extends State<ProductsListFiltersModal> {
   DateTime toDateFilterValue;
 
   @override
-  void initState() {
-    sortOrderByValue = widget.productsProvider.sortOrderByValue;
-    sortOrderValue = widget.productsProvider.sortOrderValue;
-    statusFilterValue = widget.productsProvider.statusFilterValue;
-    stockStatusFilterValue =
-        widget.productsProvider.stockStatusFilterValue;
-    featuredFilterValue = widget.productsProvider.featuredFilterValue;
-    onSaleFilterValue = widget.productsProvider.onSaleFilterValue;
-    minPriceFilterValue = widget.productsProvider.minPriceFilterValue;
-    maxPriceFilterValue = widget.productsProvider.maxPriceFilterValue;
-    fromDateFilterValue = widget.productsProvider.fromDateFilterValue;
-    toDateFilterValue = widget.productsProvider.toDateFilterValue;
-
-    super.initState();
+  void didChangeDependencies() {
+    if (isInit) {
+      ProductsListFilters productsListFilters =
+          Provider.of<ProductsListFilters>(context, listen: false);
+      sortOrderByValue = productsListFilters.sortOrderByValue;
+      sortOrderValue = productsListFilters.sortOrderValue;
+      statusFilterValue = productsListFilters.statusFilterValue;
+      stockStatusFilterValue = productsListFilters.stockStatusFilterValue;
+      featuredFilterValue = productsListFilters.featuredFilterValue;
+      onSaleFilterValue = productsListFilters.onSaleFilterValue;
+      minPriceFilterValue = productsListFilters.minPriceFilterValue;
+      maxPriceFilterValue = productsListFilters.maxPriceFilterValue;
+      fromDateFilterValue = productsListFilters.fromDateFilterValue;
+      toDateFilterValue = productsListFilters.toDateFilterValue;
+    }
+    isInit = false;
+    super.didChangeDependencies();
   }
 
   @override
@@ -446,7 +446,9 @@ class _ProductsListFiltersModalState extends State<ProductsListFiltersModal> {
         FlatButton(
           child: Text("Apply"),
           onPressed: () {
-            widget.productsProvider.changeFilterModalValues(
+            ProductsListFilters productsListFilters =
+                Provider.of<ProductsListFilters>(context, listen: false);
+            productsListFilters.changeFilterModalValues(
                 sortOrderByValue: sortOrderByValue,
                 sortOrderValue: sortOrderValue,
                 statusFilterValue: statusFilterValue,
@@ -457,11 +459,7 @@ class _ProductsListFiltersModalState extends State<ProductsListFiltersModal> {
                 maxPriceFilterValue: maxPriceFilterValue,
                 fromDateFilterValue: fromDateFilterValue,
                 toDateFilterValue: toDateFilterValue);
-            widget.productsProvider.handleRefresh(
-              baseurl: widget.baseurl,
-              username: widget.username,
-              password: widget.password,
-            );
+            widget.handleRefresh();
             Navigator.of(context).pop();
           },
         )

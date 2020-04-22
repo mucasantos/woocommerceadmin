@@ -17,7 +17,7 @@ class ProductDetailsImages extends StatelessWidget {
   Widget build(BuildContext context) {
     return Consumer<Products>(
       builder: (context, productListData, _) {
-        Product productData = productListData.findProductById(this.id);
+        Product productData = productListData.getProductById(this.id);
         if (productData?.images is List && productData.images.isNotEmpty) {
           List<String> imagesSrcList = [];
           for (int i = 0; i < productData.images.length; i++) {

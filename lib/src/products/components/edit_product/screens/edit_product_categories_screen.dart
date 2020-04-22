@@ -52,7 +52,7 @@ class _EditProductCategoriesScreenState
   void didChangeDependencies() {
     if (_isInit) {
       final Product productData = Provider.of<Products>(context, listen: false)
-          .findProductById(widget.id);
+          .getProductById(widget.id);
       if (productData?.categories is List &&
           productData.categories.isNotEmpty) {
         for (int i = 0; i < productData.categories.length; i++) {
