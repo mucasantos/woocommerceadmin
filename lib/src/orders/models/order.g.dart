@@ -380,9 +380,10 @@ FeeLine _$FeeLineFromJson(Map<String, dynamic> json) {
     taxStatus: json['tax_status'] as String,
     total: json['total'] as String,
     totalTax: json['total_tax'] as String,
-    taxes: json['taxes'] == null
-        ? null
-        : TaxLine.fromJson(json['taxes'] as Map<String, dynamic>),
+    taxes: (json['taxes'] as List)
+        ?.map((e) =>
+            e == null ? null : TaxLine.fromJson(e as Map<String, dynamic>))
+        ?.toList(),
     metaData: (json['meta_data'] as List)
         ?.map((e) => e == null
             ? null

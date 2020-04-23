@@ -344,7 +344,7 @@ class FeeLine {
   final String taxStatus;
   final String total;
   final String totalTax;
-  final TaxLine taxes;
+  final List<TaxLine> taxes;
   final List<FeeLineMetaData> metaData;
 
   FeeLine({
