@@ -1,9 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
-import 'package:woocommerceadmin/src/products/models/products.dart';
+import 'package:woocommerceadmin/src/products/providers/product_provider.dart';
 
 class ProductDetailsHeadlineWidget extends StatelessWidget {
-
   final int id;
 
   ProductDetailsHeadlineWidget({
@@ -12,8 +11,8 @@ class ProductDetailsHeadlineWidget extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Consumer<Products>(
-      builder: (context, productListData, _) => Container(
+    return Consumer<ProductProvider>(
+      builder: (context, productProvider, _) => Container(
         child: Row(
           children: <Widget>[
             Expanded(
@@ -22,7 +21,7 @@ class ProductDetailsHeadlineWidget extends StatelessWidget {
                 child: Column(
                   children: <Widget>[
                     Text(
-                      productListData.getProductById(this.id) ?.name ?? "",
+                      productProvider?.product?.name ?? "",
                       maxLines: 3,
                       overflow: TextOverflow.ellipsis,
                       style: Theme.of(context).textTheme.headline,

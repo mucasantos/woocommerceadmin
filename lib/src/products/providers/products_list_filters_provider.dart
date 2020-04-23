@@ -1,6 +1,6 @@
 import 'package:flutter/foundation.dart';
 
-class ProductsListFilters with ChangeNotifier {
+class ProductsListFiltersProvider with ChangeNotifier {
   bool _isSearching = false;
   String _searchValue = "";
 

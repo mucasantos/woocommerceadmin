@@ -1,11 +1,7 @@
 import 'package:flutter/material.dart';
-import 'package:intl/intl.dart';
 import 'package:provider/provider.dart';
-import 'package:recase/recase.dart';
-import 'package:woocommerceadmin/src/orders/components/order_details/screens/order_details_screen.dart';
 import 'package:woocommerceadmin/src/orders/components/orders_list/widgets/orders_list_item_widget.dart';
-import 'package:woocommerceadmin/src/orders/models/order.dart';
-import 'package:woocommerceadmin/src/orders/models/orders.dart';
+import 'package:woocommerceadmin/src/orders/providers/orders_list_provider.dart';
 
 class OrdersListWidget extends StatelessWidget {
   final String baseurl;
@@ -20,7 +16,7 @@ class OrdersListWidget extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Consumer<Orders>(
+    return Consumer<OrdersListProvider>(
       builder: (context, ordersListData, _) {
         return ListView.builder(
           itemCount: ordersListData.orders.length,

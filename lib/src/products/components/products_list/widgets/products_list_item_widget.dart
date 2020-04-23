@@ -1,20 +1,22 @@
 import 'package:extended_image/extended_image.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_spinkit/flutter_spinkit.dart';
+import 'package:provider/provider.dart';
 import 'package:woocommerceadmin/src/products/components/product_details/screens/product_details_screen.dart';
 import 'package:woocommerceadmin/src/products/models/product.dart';
+import 'package:woocommerceadmin/src/products/providers/product_provider.dart';
 
 class ProductItemWidget extends StatelessWidget {
   final String baseurl;
   final String username;
   final String password;
-  final Product productData;
+  final ProductProvider productProvider;
 
   ProductItemWidget({
     @required this.baseurl,
     @required this.username,
     @required this.password,
-    @required this.productData,
+    @required this.productProvider,
   });
 
   @override
@@ -25,11 +27,15 @@ class ProductItemWidget extends StatelessWidget {
           Navigator.push(
             context,
             MaterialPageRoute(
-              builder: (context) => ProductDetailsScreen(
-                baseurl: baseurl,
-                username: username,
-                password: password,
-                id: productData.id,
+              builder: (context) => ChangeNotifierProvider.value(
+                value: productProvider,
+                child: ProductDetailsScreen(
+                  baseurl: baseurl,
+                  username: username,
+                  password: password,
+                  id: productProvider?.product?.id,
+                  // productProvider: productProvider,
+                ),
               ),
             ),
           );
@@ -39,13 +45,13 @@ class ProductItemWidget extends StatelessWidget {
             mainAxisSize: MainAxisSize.max,
             crossAxisAlignment: CrossAxisAlignment.center,
             children: <Widget>[
-              ((productData?.images == null
+              ((productProvider?.product?.images == null
                       ? null
-                      : productData.images.isEmpty
+                      : productProvider.product.images.isEmpty
                           ? null
-                          : productData.images[0]?.src) is String)
+                          : productProvider.product.images[0]?.src) is String)
                   ? ExtendedImage.network(
-                      productData.images[0].src,
+                      productProvider.product.images[0].src,
                       fit: BoxFit.fill,
                       width: 140,
                       height: 140,
@@ -73,31 +79,31 @@ class ProductItemWidget extends StatelessWidget {
                       mainAxisSize: MainAxisSize.min,
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: <Widget>[
-                        if (productData?.name is String)
+                        if (productProvider?.product?.name is String)
                           Text(
-                            productData.name,
+                            productProvider.product.name,
                             style: TextStyle(
                                 fontSize: 20.0, fontWeight: FontWeight.bold),
                           ),
-                        if (productData?.sku is String)
+                        if (productProvider?.product?.sku is String)
                           Text(
-                            "SKU: ${productData.sku}",
+                            "SKU: ${productProvider.product.sku}",
                           ),
-                        if (productData?.price is String)
+                        if (productProvider?.product?.price is String)
                           Text(
-                            "Price: ${productData.price}",
+                            "Price: ${productProvider.product.price}",
                           ),
-                        if (productData?.stockStatus is String)
+                        if (productProvider?.product?.stockStatus is String)
                           Text(
-                            "Stock Status: ${productData.stockStatus}",
+                            "Stock Status: ${productProvider.product.stockStatus}",
                           ),
-                        if (productData?.stockQuantity is int)
+                        if (productProvider?.product?.stockQuantity is int)
                           Text(
-                            "Stock: ${productData.stockQuantity}",
+                            "Stock: ${productProvider.product.stockQuantity}",
                           ),
-                        if (productData?.status is String)
+                        if (productProvider?.product?.status is String)
                           Text(
-                            "Status: ${productData.status}",
+                            "Status: ${productProvider.product.status}",
                           )
                       ]),
                 ),

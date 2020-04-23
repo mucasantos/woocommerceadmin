@@ -7,19 +7,18 @@ import 'package:http/http.dart' as http;
 import 'package:provider/provider.dart';
 import 'package:woocommerceadmin/src/common/widgets/single_select.dart';
 import 'package:woocommerceadmin/src/products/models/product.dart';
-import 'package:woocommerceadmin/src/products/models/products.dart';
+import 'package:woocommerceadmin/src/products/providers/product_provider.dart';
+import 'package:woocommerceadmin/src/products/providers/products_list_provider.dart';
 
 class EditProductInventoryScreen extends StatefulWidget {
   final String baseurl;
   final String username;
   final String password;
-  final int id;
 
   EditProductInventoryScreen({
     @required this.baseurl,
     @required this.username,
     @required this.password,
-    @required this.id,
   });
 
   @override
@@ -41,8 +40,8 @@ class _EditProductInventoryScreenState
 
   void didChangeDependencies() {
     if (_isInit) {
-      final Product productData = Provider.of<Products>(context, listen: false)
-          .getProductById(widget.id);
+      final Product productData =
+          Provider.of<ProductProvider>(context, listen: false).product;
       sku = productData?.sku ?? "";
       stockStatus = productData?.stockStatus ?? "";
       manageStock = productData?.manageStock ?? false;
@@ -286,74 +285,65 @@ class _EditProductInventoryScreenState
       updatedProductData["backorders"] = backorders;
     }
 
-    Products productsListData = Provider.of<Products>(context, listen: false);
-    int productIndex = productsListData.getProductIndexById(widget.id);
-    if (productIndex >= 0) {
-      String url =
-          "${widget.baseurl}/wp-json/wc/v3/products/${widget.id}?consumer_key=${widget.username}&consumer_secret=${widget.password}";
-      http.Response response;
-      setState(() {
-        _isLoading = true;
-      });
-      try {
-        response = await http.put(
-          url,
-          headers: {HttpHeaders.contentTypeHeader: "application/json"},
-          body: json.encode(updatedProductData),
-        );
-        if (response.statusCode == 200) {
-          dynamic responseBody = json.decode(response.body);
-          if (responseBody is Map &&
-              responseBody.containsKey("id") &&
-              responseBody["id"] is int) {
-            Product newProduct = Product.fromJson(responseBody);
-            productsListData.replaceProductById(widget.id, newProduct);
-            Navigator.pop(
-                context, "Product inventory details updated successfully...");
-          } else {
-            setState(() {
-              _isLoading = false;
-            });
-            scaffoldKey.currentState.showSnackBar(
-              SnackBar(
-                content: Text("Failed to update product, try again"),
-                duration: Duration(seconds: 3),
-              ),
-            );
-          }
+    final ProductProvider productProvider =
+        Provider.of<ProductProvider>(context, listen: false);
+    final int productId = productProvider.product.id;
+    String url =
+        "${widget.baseurl}/wp-json/wc/v3/products/$productId?consumer_key=${widget.username}&consumer_secret=${widget.password}";
+    http.Response response;
+    setState(() {
+      _isLoading = true;
+    });
+    try {
+      response = await http.put(
+        url,
+        headers: {HttpHeaders.contentTypeHeader: "application/json"},
+        body: json.encode(updatedProductData),
+      );
+      if (response.statusCode == 200) {
+        dynamic responseBody = json.decode(response.body);
+        if (responseBody is Map &&
+            responseBody.containsKey("id") &&
+            responseBody["id"] is int) {
+          productProvider.product = Product.fromJson(responseBody);
+          Provider.of<ProductsListProvider>(context, listen: false).replaceProductProviderById(productId, productProvider);
+          Navigator.pop(
+              context, "Product inventory details updated successfully...");
         } else {
           setState(() {
             _isLoading = false;
           });
-          String errorCode = "";
-          if (json.decode(response.body) is Map &&
-              json.decode(response.body).containsKey("code")) {
-            errorCode = json.decode(response.body)["code"];
-          }
           scaffoldKey.currentState.showSnackBar(
             SnackBar(
-              content: Text(
-                  "Failed to update product, try again. Error: $errorCode"),
+              content: Text("Failed to update product, try again"),
               duration: Duration(seconds: 3),
             ),
           );
         }
-      } catch (e) {
+      } else {
         setState(() {
           _isLoading = false;
         });
+        String errorCode = "";
+        if (json.decode(response.body) is Map &&
+            json.decode(response.body).containsKey("code")) {
+          errorCode = json.decode(response.body)["code"];
+        }
         scaffoldKey.currentState.showSnackBar(
           SnackBar(
-            content: Text("Failed to update product, try again. Error: $e"),
+            content:
+                Text("Failed to update product, try again. Error: $errorCode"),
             duration: Duration(seconds: 3),
           ),
         );
       }
-    } else {
+    } catch (e) {
+      setState(() {
+        _isLoading = false;
+      });
       scaffoldKey.currentState.showSnackBar(
         SnackBar(
-          content: Text(
-              "Failed to update product, try again. Error: Can't find product index"),
+          content: Text("Failed to update product, try again. Error: $e"),
           duration: Duration(seconds: 3),
         ),
       );

@@ -4,25 +4,24 @@ import 'package:recase/recase.dart';
 import 'package:woocommerceadmin/src/products/components/edit_product/screens/edit_product_general_screen.dart';
 import 'package:woocommerceadmin/src/products/components/product_details/helpers/product_details_widget_helpers.dart';
 import 'package:woocommerceadmin/src/products/models/product.dart';
-import 'package:woocommerceadmin/src/products/models/products.dart';
+import 'package:woocommerceadmin/src/products/providers/product_provider.dart';
 
 class ProductDetailsGeneralWidget extends StatelessWidget {
   final String baseurl;
   final String username;
   final String password;
-  final int id;
 
   ProductDetailsGeneralWidget({
     @required this.baseurl,
     @required this.username,
     @required this.password,
-    @required this.id,
   });
 
   @override
   Widget build(BuildContext context) {
-    final Product productData =
-        Provider.of<Products>(context).getProductById(this.id);
+    final ProductProvider productProvider =
+        Provider.of<ProductProvider>(context);
+    final Product productData = productProvider.product;
     Widget productGeneralWidget = SizedBox.shrink();
     List<Widget> productGeneralWidgetData = [];
 
@@ -168,11 +167,13 @@ class ProductDetailsGeneralWidget extends StatelessWidget {
           String result = await Navigator.push(
             context,
             MaterialPageRoute(
-              builder: (context) => EditProductGeneralScreen(
-                baseurl: this.baseurl,
-                username: this.username,
-                password: this.password,
-                id: this.id,
+              builder: (context) => ChangeNotifierProvider.value(
+                value: productProvider,
+                child: EditProductGeneralScreen(
+                  baseurl: this.baseurl,
+                  username: this.username,
+                  password: this.password,
+                ),
               ),
             ),
           );

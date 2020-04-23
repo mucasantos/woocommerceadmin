@@ -3,25 +3,24 @@ import 'package:provider/provider.dart';
 import 'package:woocommerceadmin/src/products/components/edit_product/screens/edit_product_categories_screen.dart';
 import 'package:woocommerceadmin/src/products/components/product_details/helpers/product_details_widget_helpers.dart';
 import 'package:woocommerceadmin/src/products/models/product.dart';
-import 'package:woocommerceadmin/src/products/models/products.dart';
+import 'package:woocommerceadmin/src/products/providers/product_provider.dart';
 
 class ProductDetailsCategoriesWidget extends StatelessWidget {
   final String baseurl;
   final String username;
   final String password;
-  final int id;
 
   ProductDetailsCategoriesWidget({
     @required this.baseurl,
     @required this.username,
     @required this.password,
-    @required this.id,
   });
 
   @override
   Widget build(BuildContext context) {
-    final Product productData =
-        Provider.of<Products>(context).getProductById(this.id);
+    final ProductProvider productProvider =
+        Provider.of<ProductProvider>(context);
+    final Product productData = productProvider.product;
     Widget productCategoriesWidget = SizedBox.shrink();
 
     if (productData?.categories is List && productData.categories.isNotEmpty) {
@@ -59,11 +58,13 @@ class ProductDetailsCategoriesWidget extends StatelessWidget {
             String result = await Navigator.push(
               context,
               MaterialPageRoute(
-                builder: (context) => EditProductCategoriesScreen(
-                  baseurl: this.baseurl,
-                  username: this.username,
-                  password: this.password,
-                  id: this.id,
+                builder: (context) => ChangeNotifierProvider.value(
+                  value: productProvider,
+                  child: EditProductCategoriesScreen(
+                    baseurl: this.baseurl,
+                    username: this.username,
+                    password: this.password,
+                  ),
                 ),
               ),
             );

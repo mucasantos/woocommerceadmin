@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:provider/provider.dart';
 import 'package:recase/recase.dart';
-import 'package:woocommerceadmin/src/products/models/products_list_filters.dart';
+import 'package:woocommerceadmin/src/products/providers/products_list_filters_provider.dart';
 
 class ProductsListFiltersModal extends StatefulWidget {
   final Function handleRefresh;
@@ -34,8 +34,8 @@ class _ProductsListFiltersModalState extends State<ProductsListFiltersModal> {
   @override
   void didChangeDependencies() {
     if (isInit) {
-      ProductsListFilters productsListFilters =
-          Provider.of<ProductsListFilters>(context, listen: false);
+      ProductsListFiltersProvider productsListFilters =
+          Provider.of<ProductsListFiltersProvider>(context, listen: false);
       sortOrderByValue = productsListFilters.sortOrderByValue;
       sortOrderValue = productsListFilters.sortOrderValue;
       statusFilterValue = productsListFilters.statusFilterValue;
@@ -446,8 +446,8 @@ class _ProductsListFiltersModalState extends State<ProductsListFiltersModal> {
         FlatButton(
           child: Text("Apply"),
           onPressed: () {
-            ProductsListFilters productsListFilters =
-                Provider.of<ProductsListFilters>(context, listen: false);
+            ProductsListFiltersProvider productsListFilters =
+                Provider.of<ProductsListFiltersProvider>(context, listen: false);
             productsListFilters.changeFilterModalValues(
                 sortOrderByValue: sortOrderByValue,
                 sortOrderValue: sortOrderValue,

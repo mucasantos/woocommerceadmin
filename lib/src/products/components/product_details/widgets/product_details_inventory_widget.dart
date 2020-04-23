@@ -4,25 +4,24 @@ import 'package:recase/recase.dart';
 import 'package:woocommerceadmin/src/products/components/edit_product/screens/edit_product_inventory_screen.dart';
 import 'package:woocommerceadmin/src/products/components/product_details/helpers/product_details_widget_helpers.dart';
 import 'package:woocommerceadmin/src/products/models/product.dart';
-import 'package:woocommerceadmin/src/products/models/products.dart';
+import 'package:woocommerceadmin/src/products/providers/product_provider.dart';
 
 class ProductDetailsInventoryWidget extends StatelessWidget {
   final String baseurl;
   final String username;
   final String password;
-  final int id;
 
   ProductDetailsInventoryWidget({
     @required this.baseurl,
     @required this.username,
     @required this.password,
-    @required this.id,
   });
 
   @override
   Widget build(BuildContext context) {
-    final Product productData =
-        Provider.of<Products>(context).getProductById(this.id);
+    final ProductProvider productProvider =
+        Provider.of<ProductProvider>(context);
+    final Product productData = productProvider.product;
     Widget productInventoryWidget = SizedBox.shrink();
     List<Widget> productInventoryWidgetData = [];
 
@@ -107,11 +106,13 @@ class ProductDetailsInventoryWidget extends StatelessWidget {
           String result = await Navigator.push(
             context,
             MaterialPageRoute(
-              builder: (context) => EditProductInventoryScreen(
-                baseurl: this.baseurl,
-                username: this.username,
-                password: this.password,
-                id: this.id,
+              builder: (context) => ChangeNotifierProvider.value(
+                value: productProvider,
+                child: EditProductInventoryScreen(
+                  baseurl: this.baseurl,
+                  username: this.username,
+                  password: this.password,
+                ),
               ),
             ),
           );

@@ -7,10 +7,10 @@ import 'package:woocommerceadmin/src/customers/components/customers_list/screens
 import 'package:woocommerceadmin/src/db/ConnectionDBProvider.dart';
 import 'package:woocommerceadmin/src/db/models/Connection.dart';
 import 'package:woocommerceadmin/src/orders/components/orders_list/screens/orders_list_screen.dart';
-import 'package:woocommerceadmin/src/orders/models/orders.dart';
+import 'package:woocommerceadmin/src/orders/providers/orders_list_provider.dart';
 import 'package:woocommerceadmin/src/products/components/products_list/screens/products_list_screen.dart';
-import 'package:woocommerceadmin/src/products/models/products.dart';
-import 'package:woocommerceadmin/src/products/models/products_list_filters.dart';
+import 'package:woocommerceadmin/src/products/providers/products_list_filters_provider.dart';
+import 'package:woocommerceadmin/src/products/providers/products_list_provider.dart';
 import 'package:woocommerceadmin/src/reports/components/reports/screens/reports_screen.dart';
 import 'package:woocommerceadmin/src/config.dart';
 import 'package:flutter_spinkit/flutter_spinkit.dart';
@@ -24,13 +24,13 @@ class MyApp extends StatelessWidget {
     return MultiProvider(
       providers: [
         ChangeNotifierProvider(
-          create: (context) => Products(),
+          create: (context) => ProductsListProvider(),
         ),
         ChangeNotifierProvider(
-          create: (context) => ProductsListFilters(),
+          create: (context) => ProductsListFiltersProvider(),
         ),
         ChangeNotifierProvider(
-          create: (context) => Orders(),
+          create: (context) => OrdersListProvider(),
         ),
       ],
       child: MaterialApp(

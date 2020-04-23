@@ -3,15 +3,15 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:provider/provider.dart';
 import 'package:woocommerceadmin/src/products/components/products_list/widgets/products_list_filters_modal.dart';
-import 'package:woocommerceadmin/src/products/models/products_list_filters.dart';
+import 'package:woocommerceadmin/src/products/providers/products_list_filters_provider.dart';
 
 class ProductsListAppBar {
   static AppBar getAppBar({
     @required BuildContext context,
     @required Function handleRefresh,
   }) {
-    final ProductsListFilters productsListFilters =
-        Provider.of<ProductsListFilters>(context);
+    final ProductsListFiltersProvider productsListFilters =
+        Provider.of<ProductsListFiltersProvider>(context);
     return AppBar(
       title: Row(
         children: <Widget>[
@@ -101,8 +101,8 @@ class ProductsListAppBar {
     @required BuildContext context,
     @required Function handleRefresh,
   }) async {
-    ProductsListFilters productsListFilters =
-        Provider.of<ProductsListFilters>(context, listen: false);
+    ProductsListFiltersProvider productsListFilters =
+        Provider.of<ProductsListFiltersProvider>(context, listen: false);
     try {
       String barcode = await BarcodeScanner.scan();
       productsListFilters.changeSearchValue(barcode);

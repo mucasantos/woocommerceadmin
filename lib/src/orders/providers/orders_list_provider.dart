@@ -1,7 +1,7 @@
 import 'package:flutter/foundation.dart';
 import 'package:woocommerceadmin/src/orders/models/order.dart';
 
-class Orders with ChangeNotifier {
+class OrdersListProvider with ChangeNotifier {
   List<Order> _orders = [];
 
   List<Order> get orders => [..._orders];
@@ -20,7 +20,7 @@ class Orders with ChangeNotifier {
     notifyListeners();
   }
 
-  void clearOrderssList() {
+  void clearOrdersList() {
     _orders = [];
     notifyListeners();
   }

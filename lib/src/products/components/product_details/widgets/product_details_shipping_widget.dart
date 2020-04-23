@@ -4,25 +4,25 @@ import 'package:recase/recase.dart';
 import 'package:woocommerceadmin/src/products/components/edit_product/screens/edit_product_shipping_screen.dart';
 import 'package:woocommerceadmin/src/products/components/product_details/helpers/product_details_widget_helpers.dart';
 import 'package:woocommerceadmin/src/products/models/product.dart';
-import 'package:woocommerceadmin/src/products/models/products.dart';
+import 'package:woocommerceadmin/src/products/providers/product_provider.dart';
 
 class ProductDetailsShippingWidget extends StatelessWidget {
   final String baseurl;
   final String username;
   final String password;
-  final int id;
 
   ProductDetailsShippingWidget({
     @required this.baseurl,
     @required this.username,
     @required this.password,
-    @required this.id,
   });
 
   @override
   Widget build(BuildContext context) {
-    final Product productData =
-        Provider.of<Products>(context).getProductById(this.id);
+    final ProductProvider productProvider =
+        Provider.of<ProductProvider>(context);
+    final Product productData = productProvider.product;
+
     Widget productShippingWidget = SizedBox.shrink();
     List<Widget> productShippingWidgetData = [];
 
@@ -107,26 +107,28 @@ class ProductDetailsShippingWidget extends StatelessWidget {
         widgetsList: productShippingWidgetData,
         isTappable: true,
         onTap: () async {
-            String result = await Navigator.push(
-              context,
-              MaterialPageRoute(
-                builder: (context) => EditProductShippingScreen(
+          String result = await Navigator.push(
+            context,
+            MaterialPageRoute(
+              builder: (context) => ChangeNotifierProvider.value(
+                value: productProvider,
+                child: EditProductShippingScreen(
                   baseurl: this.baseurl,
                   username: this.username,
                   password: this.password,
-                  id: this.id,
                 ),
               ),
+            ),
+          );
+          if (result is String) {
+            Scaffold.of(context).showSnackBar(
+              SnackBar(
+                content: Text(result.toString()),
+                duration: Duration(seconds: 3),
+              ),
             );
-            if (result is String) {
-              Scaffold.of(context).showSnackBar(
-                SnackBar(
-                  content: Text(result.toString()),
-                  duration: Duration(seconds: 3),
-                ),
-              );
-            }
-          },
+          }
+        },
       );
     }
     return productShippingWidget;

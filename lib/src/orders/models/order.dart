@@ -41,7 +41,7 @@ class Order {
   final List<LineItem> lineItems;
   final List<TaxLine> taxLines;
   final List<ShippingLine> shippingLines;
-  // final List<FeeLine> feeLines;
+  final List<FeeLine> feeLines;
   final List<CouponLine> couponLines;
   final List<Refund> refunds;
   final String currencySymbol;
@@ -85,7 +85,7 @@ class Order {
     this.lineItems,
     this.taxLines,
     this.shippingLines,
-    // this.feeLines,
+    this.feeLines,
     this.couponLines,
     this.refunds,
     this.currencySymbol,

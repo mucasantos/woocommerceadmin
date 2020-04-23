@@ -3,16 +3,13 @@ import 'package:flutter/services.dart';
 import 'dart:io';
 import 'package:flutter_spinkit/flutter_spinkit.dart';
 import 'package:http/http.dart' as http;
-import 'package:intl/intl.dart';
 import 'package:provider/provider.dart';
 import 'dart:convert';
-import 'package:recase/recase.dart';
-import 'package:woocommerceadmin/src/orders/components/order_details/screens/order_details_screen.dart';
 import 'package:woocommerceadmin/src/orders/components/orders_list/widgets/orders_list_filters_modal.dart';
 import 'package:barcode_scan/barcode_scan.dart';
 import 'package:woocommerceadmin/src/orders/components/orders_list/widgets/orders_list_widget.dart';
 import 'package:woocommerceadmin/src/orders/models/order.dart';
-import 'package:woocommerceadmin/src/orders/models/orders.dart';
+import 'package:woocommerceadmin/src/orders/providers/orders_list_provider.dart';
 
 class OrdersListPage extends StatefulWidget {
   final String baseurl;
@@ -68,7 +65,7 @@ class _OrdersListPageState extends State<OrdersListPage> {
     return Scaffold(
       key: scaffoldKey,
       appBar: _myAppBar(),
-      body: Consumer<Orders>(
+      body: Consumer<OrdersListProvider>(
         builder: (context, ordersListData, _) {
           return _isListError && ordersListData.orders.isEmpty
               ? _mainErrorWidget()
@@ -147,7 +144,7 @@ class _OrdersListPageState extends State<OrdersListPage> {
             responseBody.forEach((item) {
               loadedOrders.add(Order.fromJson(item));
             });
-            Provider.of<Orders>(context, listen: false).addOrders(loadedOrders);
+            Provider.of<OrdersListProvider>(context, listen: false).addOrders(loadedOrders);
             setState(() {
               _hasMoreToLoad = true;
               _isListLoading = false;
@@ -210,7 +207,7 @@ class _OrdersListPageState extends State<OrdersListPage> {
   Future<void> handleRefresh() async {
     setState(() {
       _page = 1;
-      Provider.of<Orders>(context, listen: false).clearOrderssList();
+      Provider.of<OrdersListProvider>(context, listen: false).clearOrdersList();
     });
     await fetchOrdersList();
   }

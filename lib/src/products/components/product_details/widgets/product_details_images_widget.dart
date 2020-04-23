@@ -4,7 +4,7 @@ import 'package:flutter_spinkit/flutter_spinkit.dart';
 import 'package:provider/provider.dart';
 import 'package:woocommerceadmin/src/common/widgets/image_viewer.dart';
 import 'package:woocommerceadmin/src/products/models/product.dart';
-import 'package:woocommerceadmin/src/products/models/products.dart';
+import 'package:woocommerceadmin/src/products/providers/product_provider.dart';
 
 class ProductDetailsImages extends StatelessWidget {
   final int id;
@@ -15,9 +15,9 @@ class ProductDetailsImages extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Consumer<Products>(
-      builder: (context, productListData, _) {
-        Product productData = productListData.getProductById(this.id);
+    return Consumer<ProductProvider>(
+      builder: (context, productProvider, _) {
+        Product productData = productProvider.product;
         if (productData?.images is List && productData.images.isNotEmpty) {
           List<String> imagesSrcList = [];
           for (int i = 0; i < productData.images.length; i++) {

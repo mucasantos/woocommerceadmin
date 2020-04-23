@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 // import 'package:flutter_spinkit/flutter_spinkit.dart';
 import 'package:provider/provider.dart';
 import 'package:woocommerceadmin/src/products/components/products_list/widgets/products_list_item_widget.dart';
-import 'package:woocommerceadmin/src/products/models/products.dart';
+import 'package:woocommerceadmin/src/products/providers/products_list_provider.dart';
 
 class ProductsListWidget extends StatelessWidget {
   final String baseurl;
@@ -17,16 +17,16 @@ class ProductsListWidget extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Consumer<Products>(
-      builder: (context, productsListData, _) {
+    return Consumer<ProductsListProvider>(
+      builder: (context, productsListProvider, _) {
         return ListView.builder(
-          itemCount: productsListData.products.length,
+          itemCount: productsListProvider.productProviders.length,
           itemBuilder: (BuildContext context, int index) {
             return ProductItemWidget(
               baseurl: baseurl,
               username: username,
               password: password,
-              productData: productsListData.products[index],
+              productProvider: productsListProvider.productProviders[index],
             );
           },
         );

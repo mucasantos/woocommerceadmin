@@ -8,8 +8,9 @@ import 'package:provider/provider.dart';
 import 'package:woocommerceadmin/src/products/components/products_list/widgets/products_list_appbar.dart';
 import 'package:woocommerceadmin/src/products/components/products_list/widgets/products_list_widget.dart';
 import 'package:woocommerceadmin/src/products/models/product.dart';
-import 'package:woocommerceadmin/src/products/models/products.dart';
-import 'package:woocommerceadmin/src/products/models/products_list_filters.dart';
+import 'package:woocommerceadmin/src/products/providers/product_provider.dart';
+import 'package:woocommerceadmin/src/products/providers/products_list_filters_provider.dart';
+import 'package:woocommerceadmin/src/products/providers/products_list_provider.dart';
 
 class ProductsListScreen extends StatefulWidget {
   static const routeName = '/products-list';
@@ -54,9 +55,9 @@ class _ProductsListScreenState extends State<ProductsListScreen> {
         context: context,
         handleRefresh: this.handleRefresh,
       ),
-      body: Consumer<Products>(
+      body: Consumer<ProductsListProvider>(
         builder: (context, productsData, _) {
-          return _isListError && productsData.products.isEmpty
+          return _isListError && productsData.productProviders.isEmpty
               ? _mainErrorWidget()
               : RefreshIndicator(
                   onRefresh: () async {
@@ -102,8 +103,8 @@ class _ProductsListScreenState extends State<ProductsListScreen> {
   Future<void> fetchProductsList({
     int perPage = 25,
   }) async {
-    ProductsListFilters productsListData =
-        Provider.of<ProductsListFilters>(context, listen: false);
+    ProductsListFiltersProvider productsListData =
+        Provider.of<ProductsListFiltersProvider>(context, listen: false);
     String url =
         "${widget.baseurl}/wp-json/wc/v3/products?page=$_page&per_page=$perPage&consumer_key=${widget.username}&consumer_secret=${widget.password}";
 
@@ -165,11 +166,11 @@ class _ProductsListScreenState extends State<ProductsListScreen> {
         dynamic responseBody = json.decode(response.body);
         if (responseBody is List) {
           if (responseBody.isNotEmpty) {
-            final List<Product> loadedProducts = [];
+            final List<ProductProvider> loadedProducts = [];
             responseBody.forEach((item) {
-              loadedProducts.add(Product.fromJson(item));
+              loadedProducts.add(ProductProvider(Product.fromJson(item)));
             });
-            Provider.of<Products>(context, listen: false)
+            Provider.of<ProductsListProvider>(context, listen: false)
                 .addProducts(loadedProducts);
             setState(() {
               _hasMoreToLoad = true;
@@ -230,7 +231,7 @@ class _ProductsListScreenState extends State<ProductsListScreen> {
 
   Future<void> handleRefresh() async {
     _page = 1;
-    Provider.of<Products>(context, listen: false).clearProductsList();
+    Provider.of<ProductsListProvider>(context, listen: false).clearProductProvidersList();
     fetchProductsList();
   }
 

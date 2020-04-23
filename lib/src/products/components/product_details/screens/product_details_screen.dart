@@ -8,6 +8,7 @@ import 'package:woocommerceadmin/src/products/components/product_details/widgets
 import 'package:woocommerceadmin/src/products/components/product_details/widgets/product_details_pricing_widget.dart';
 import 'package:woocommerceadmin/src/products/components/product_details/widgets/product_details_reviews_widget.dart';
 import 'package:woocommerceadmin/src/products/components/product_details/widgets/product_details_shipping_widget.dart';
+import 'package:woocommerceadmin/src/products/providers/product_provider.dart';
 
 class ProductDetailsScreen extends StatefulWidget {
   static const routeName = '/product-details';
@@ -16,8 +17,7 @@ class ProductDetailsScreen extends StatefulWidget {
   final String username;
   final String password;
   final int id;
-  final Map<String, dynamic> productData;
-  final bool preFetch;
+  // final ProductProvider productProvider;
 
   ProductDetailsScreen({
     Key key,
@@ -25,8 +25,7 @@ class ProductDetailsScreen extends StatefulWidget {
     @required this.username,
     @required this.password,
     @required this.id,
-    this.productData,
-    this.preFetch,
+    // this.productProvider,
   }) : super(key: key);
 
   @override
@@ -43,17 +42,17 @@ class _ProductDetailsScreenState extends State<ProductDetailsScreen> {
 
   @override
   void initState() {
-    if (widget.preFetch ?? true) {
+    // if (widget.preFetch ?? true) {
       // fetchProductDetails();
-    } else {
-      if (widget.productData is Map &&
-          widget.productData.containsKey("id") &&
-          widget.productData["id"] is int) {
-        productData = widget.productData;
-      } else {
-        // fetchProductDetails();
-      }
-    }
+    // } else {
+    //   if (widget.productData is Map &&
+    //       widget.productData.containsKey("id") &&
+    //       widget.productData["id"] is int) {
+    //     productData = widget.productData;
+    //   } else {
+    //     // fetchProductDetails();
+    //   }
+    // }
     super.initState();
   }
 
@@ -89,52 +88,52 @@ class _ProductDetailsScreenState extends State<ProductDetailsScreen> {
               crossAxisAlignment: CrossAxisAlignment.center,
               children: <Widget>[
                 ProductDetailsHeadlineWidget(
-                  id: widget.id,
+                  // id: widget.id,
                 ),
                 ProductDetailsImages(
-                  id: widget.id,
+                  // id: widget.id,
                 ),
                 ProductDetailsGeneralWidget(
                   baseurl: widget.baseurl,
                   username: widget.username,
                   password: widget.password,
-                  id: widget.id,
+                  // id: widget.id,
                 ),
                 ProductDetailsPricingWidget(
                   baseurl: widget.baseurl,
                   username: widget.username,
                   password: widget.password,
-                  id: widget.id,
+                  // id: widget.id,
                 ),
                 ProductDetailsInventoryWidget(
                   baseurl: widget.baseurl,
                   username: widget.username,
                   password: widget.password,
-                  id: widget.id,
+                  // id: widget.id,
                 ),
                 ProductDetailsShippingWidget(
                   baseurl: widget.baseurl,
                   username: widget.username,
                   password: widget.password,
-                  id: widget.id,
+                  // id: widget.id,
                 ),
                 ProductDetailsReviewsWidget(
                   baseurl: widget.baseurl,
                   username: widget.username,
                   password: widget.password,
-                  id: widget.id,
+                  // id: widget.id,
                 ),
                 ProductDetailsCategoriesWidget(
                   baseurl: widget.baseurl,
                   username: widget.username,
                   password: widget.password,
-                  id: widget.id,
+                  // id: widget.id,
                 ),
                 ProductDetailsAttributesWidget(
                   baseurl: widget.baseurl,
                   username: widget.username,
                   password: widget.password,
-                  id: widget.id,
+                  // id: widget.id,
                 ),
               ]),
         ),

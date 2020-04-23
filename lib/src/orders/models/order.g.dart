@@ -79,6 +79,10 @@ Order _$OrderFromJson(Map<String, dynamic> json) {
         ?.map((e) =>
             e == null ? null : ShippingLine.fromJson(e as Map<String, dynamic>))
         ?.toList(),
+    feeLines: (json['fee_lines'] as List)
+        ?.map((e) =>
+            e == null ? null : FeeLine.fromJson(e as Map<String, dynamic>))
+        ?.toList(),
     couponLines: (json['coupon_lines'] as List)
         ?.map((e) =>
             e == null ? null : CouponLine.fromJson(e as Map<String, dynamic>))
@@ -130,6 +134,7 @@ Map<String, dynamic> _$OrderToJson(Order instance) => <String, dynamic>{
       'line_items': instance.lineItems,
       'tax_lines': instance.taxLines,
       'shipping_lines': instance.shippingLines,
+      'fee_lines': instance.feeLines,
       'coupon_lines': instance.couponLines,
       'refunds': instance.refunds,
       'currency_symbol': instance.currencySymbol,

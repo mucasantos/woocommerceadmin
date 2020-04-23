@@ -2,25 +2,25 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:woocommerceadmin/src/products/components/product_details/helpers/product_details_widget_helpers.dart';
 import 'package:woocommerceadmin/src/products/models/product.dart';
-import 'package:woocommerceadmin/src/products/models/products.dart';
+import 'package:woocommerceadmin/src/products/providers/product_provider.dart';
 
 class ProductDetailsAttributesWidget extends StatelessWidget {
   final String baseurl;
   final String username;
   final String password;
-  final int id;
+  // final int id;
 
   ProductDetailsAttributesWidget({
     @required this.baseurl,
     @required this.username,
     @required this.password,
-    @required this.id,
+    // @required this.id,
   });
 
   @override
   Widget build(BuildContext context) {
     final Product productData =
-        Provider.of<Products>(context).getProductById(this.id);
+        Provider.of<ProductProvider>(context).product;
     Widget productAttributesWidget = SizedBox.shrink();
     List<Widget> productAttributesWidgetData = [];
 
