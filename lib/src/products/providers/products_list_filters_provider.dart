@@ -29,7 +29,7 @@ class ProductsListFiltersProvider with ChangeNotifier {
   DateTime get fromDateFilterValue => _fromDateFilterValue;
   DateTime get toDateFilterValue => _toDateFilterValue;
 
-   void toggleIsSearching() {
+  void toggleIsSearching() {
     _isSearching = !_isSearching;
     notifyListeners();
   }

@@ -1,15 +1,15 @@
 import 'package:flutter/material.dart';
-import 'package:flutter/services.dart';
 import 'dart:io';
 import 'package:flutter_spinkit/flutter_spinkit.dart';
 import 'package:http/http.dart' as http;
 import 'package:provider/provider.dart';
+import 'package:woocommerceadmin/src/orders/components/orders_list/widgets/orders_list_appbar.dart';
 import 'dart:convert';
-import 'package:woocommerceadmin/src/orders/components/orders_list/widgets/orders_list_filters_modal.dart';
-import 'package:barcode_scan/barcode_scan.dart';
 import 'package:woocommerceadmin/src/orders/components/orders_list/widgets/orders_list_widget.dart';
 import 'package:woocommerceadmin/src/orders/models/order.dart';
-import 'package:woocommerceadmin/src/orders/providers/orders_list_provider.dart';
+import 'package:woocommerceadmin/src/orders/providers/order_provider.dart';
+import 'package:woocommerceadmin/src/orders/providers/order_providers_list.dart';
+import 'package:woocommerceadmin/src/orders/providers/orders_list_filters_provider.dart';
 
 class OrdersListPage extends StatefulWidget {
   final String baseurl;
@@ -34,13 +34,6 @@ class _OrdersListPageState extends State<OrdersListPage> {
   bool _isListError = false;
   String _listError;
 
-  bool isSearching = false;
-  String searchValue = "";
-
-  String sortOrderByValue = "date";
-  String sortOrderValue = "desc";
-  Map<String, bool> orderStatusOptions = {};
-
   final GlobalKey<ScaffoldState> scaffoldKey = new GlobalKey<ScaffoldState>();
 
   @override
@@ -64,10 +57,16 @@ class _OrdersListPageState extends State<OrdersListPage> {
     // );
     return Scaffold(
       key: scaffoldKey,
-      appBar: _myAppBar(),
-      body: Consumer<OrdersListProvider>(
-        builder: (context, ordersListData, _) {
-          return _isListError && ordersListData.orders.isEmpty
+      appBar: OrdersListAppbar.getAppBar(
+        context: context,
+        handleRefresh: handleRefresh,
+        baseurl: widget.baseurl,
+        username: widget.username,
+        password: widget.password,
+      ),
+      body: Consumer<OrderProvidersList>(
+        builder: (context, ordersListProvider, _) {
+          return _isListError && ordersListProvider.orderProviders.isEmpty
               ? _mainErrorWidget()
               : RefreshIndicator(
                   onRefresh: handleRefresh,
@@ -109,20 +108,28 @@ class _OrdersListPageState extends State<OrdersListPage> {
     );
   }
 
-  Future<void> fetchOrdersList() async {
+  Future<void> fetchOrdersList({
+    int perPage = 25,
+  }) async {
+    OrdersListFiltersProvider ordersListFiltersProvider =
+        Provider.of<OrdersListFiltersProvider>(context, listen: false);
     String url =
-        "${widget.baseurl}/wp-json/wc/v3/orders?page=$_page&per_page=20&consumer_key=${widget.username}&consumer_secret=${widget.password}";
-    if (searchValue is String && searchValue.isNotEmpty) {
-      url += "&search=$searchValue";
+        "${widget.baseurl}/wp-json/wc/v3/orders?page=$_page&per_page=$perPage&consumer_key=${widget.username}&consumer_secret=${widget.password}";
+    if (ordersListFiltersProvider.searchValue is String &&
+        ordersListFiltersProvider.searchValue.isNotEmpty) {
+      url += "&search=${ordersListFiltersProvider.searchValue}";
     }
-    if (sortOrderByValue is String && sortOrderByValue.isNotEmpty) {
-      url += "&orderby=$sortOrderByValue";
+    if (ordersListFiltersProvider.sortOrderByValue is String &&
+        ordersListFiltersProvider.sortOrderByValue.isNotEmpty) {
+      url += "&orderby=${ordersListFiltersProvider.sortOrderByValue}";
     }
-    if (sortOrderValue is String && sortOrderValue.isNotEmpty) {
-      url += "&order=$sortOrderValue";
+    if (ordersListFiltersProvider.sortOrderValue is String &&
+        ordersListFiltersProvider.sortOrderValue.isNotEmpty) {
+      url += "&order=${ordersListFiltersProvider.sortOrderValue}";
     }
-    if (orderStatusOptions is Map && orderStatusOptions.isNotEmpty) {
-      orderStatusOptions.forEach((k, v) {
+    if (ordersListFiltersProvider.orderStatusOptions is Map &&
+        ordersListFiltersProvider.orderStatusOptions.isNotEmpty) {
+      ordersListFiltersProvider.orderStatusOptions.forEach((k, v) {
         if (v) {
           url += "&status[]=$k";
         }
@@ -140,11 +147,12 @@ class _OrdersListPageState extends State<OrdersListPage> {
         dynamic responseBody = json.decode(response.body);
         if (responseBody is List) {
           if (responseBody.isNotEmpty) {
-            final List<Order> loadedOrders = [];
+            final List<OrderProvider> loadedOrderProviders = [];
             responseBody.forEach((item) {
-              loadedOrders.add(Order.fromJson(item));
+              loadedOrderProviders.add(OrderProvider(Order.fromJson(item)));
             });
-            Provider.of<OrdersListProvider>(context, listen: false).addOrders(loadedOrders);
+            Provider.of<OrderProvidersList>(context, listen: false)
+                .addOrderProviders(loadedOrderProviders);
             setState(() {
               _hasMoreToLoad = true;
               _isListLoading = false;
@@ -193,7 +201,6 @@ class _OrdersListPageState extends State<OrdersListPage> {
         _isListError = true;
         _listError = "Failed to fetch orders. Error: $e";
       });
-      throw e;
     }
   }
 
@@ -207,145 +214,10 @@ class _OrdersListPageState extends State<OrdersListPage> {
   Future<void> handleRefresh() async {
     setState(() {
       _page = 1;
-      Provider.of<OrdersListProvider>(context, listen: false).clearOrdersList();
+      Provider.of<OrderProvidersList>(context, listen: false)
+          .clearOrderProvidersList();
     });
     await fetchOrdersList();
-  }
-
-  Future<void> scanBarcode() async {
-    try {
-      String barcode = await BarcodeScanner.scan();
-      setState(() {
-        searchValue = barcode;
-      });
-      handleRefresh();
-    } on PlatformException catch (e) {
-      if (e.code == BarcodeScanner.CameraAccessDenied) {
-        scaffoldKey.currentState.showSnackBar(SnackBar(
-          content: Text("Camera permission is not granted"),
-          duration: Duration(seconds: 3),
-        ));
-      } else {
-        scaffoldKey.currentState.showSnackBar(SnackBar(
-          content: Text("Unknown barcode scan error: $e"),
-          duration: Duration(seconds: 3),
-        ));
-      }
-    } on FormatException {
-      scaffoldKey.currentState.showSnackBar(SnackBar(
-        content: Text("Barcode scan cancelled"),
-        duration: Duration(seconds: 3),
-      ));
-    } catch (e) {
-      scaffoldKey.currentState.showSnackBar(SnackBar(
-        content: Text("Unknown barcode scan error: $e"),
-        duration: Duration(seconds: 3),
-      ));
-    }
-  }
-
-  Widget _myAppBar() {
-    Widget myAppBar;
-    myAppBar = AppBar(
-      title: Row(
-        children: <Widget>[
-          isSearching
-              ? Padding(
-                  padding: const EdgeInsets.only(right: 10),
-                  child: Icon(Icons.search),
-                )
-              : SizedBox.shrink(),
-          isSearching
-              ? Expanded(
-                  child: TextField(
-                    controller: TextEditingController(text: searchValue),
-                    style: TextStyle(color: Colors.white),
-                    textInputAction: TextInputAction.search,
-                    decoration: InputDecoration(
-                      border: InputBorder.none,
-                      hintText: "Search Orders",
-                      hintStyle: TextStyle(
-                        color: Color.fromRGBO(255, 255, 255, 0.6),
-                      ),
-                    ),
-                    cursorColor: Colors.white,
-                    onSubmitted: (String value) {
-                      setState(() {
-                        searchValue = value;
-                      });
-                      handleRefresh();
-                    },
-                  ),
-                )
-              : Expanded(
-                  child: Text("Orders List"),
-                ),
-          isSearching
-              ? IconButton(
-                  icon: Icon(Icons.center_focus_strong),
-                  onPressed: scanBarcode,
-                )
-              : IconButton(
-                  icon: Icon(Icons.search),
-                  onPressed: () {
-                    setState(() {
-                      isSearching = !isSearching;
-                    });
-                  },
-                ),
-          IconButton(
-            icon: Icon(Icons.filter_list),
-            onPressed: () {
-              showDialog(
-                context: context,
-                barrierDismissible: false,
-                builder: (BuildContext context) {
-                  return OrdersListFiltersModal(
-                    baseurl: widget.baseurl,
-                    username: widget.username,
-                    password: widget.password,
-                    sortOrderByValue: sortOrderByValue,
-                    sortOrderValue: sortOrderValue,
-                    orderStatusOptions: orderStatusOptions,
-                    onSubmit:
-                        (sortOrderByValue, sortOrderValue, orderStatusOptions) {
-                      setState(() {
-                        this.sortOrderByValue = sortOrderByValue;
-                        this.sortOrderValue = sortOrderValue;
-                        this.orderStatusOptions = orderStatusOptions;
-                      });
-                      handleRefresh();
-                    },
-                  );
-                },
-              );
-            },
-          ),
-          isSearching
-              ? IconButton(
-                  icon: Icon(Icons.close),
-                  onPressed: () {
-                    bool isPreviousSearchValueNotEmpty = false;
-                    if (searchValue.isNotEmpty) {
-                      isPreviousSearchValueNotEmpty = true;
-                    } else {
-                      isPreviousSearchValueNotEmpty = false;
-                    }
-                    setState(() {
-                      isSearching = !isSearching;
-                      searchValue = "";
-                    });
-                    if (isPreviousSearchValueNotEmpty is bool &&
-                        isPreviousSearchValueNotEmpty) {
-                      handleRefresh();
-                    }
-                  },
-                )
-              : SizedBox.shrink(),
-        ],
-      ),
-    );
-    return myAppBar;
   }
 
   Widget _mainErrorWidget() {

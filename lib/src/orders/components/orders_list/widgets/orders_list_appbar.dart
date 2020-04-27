@@ -2,88 +2,98 @@ import 'package:barcode_scan/barcode_scan.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:provider/provider.dart';
-import 'package:woocommerceadmin/src/products/components/products_list/widgets/products_list_filters_modal.dart';
-import 'package:woocommerceadmin/src/products/providers/products_list_filters_provider.dart';
+import 'package:woocommerceadmin/src/orders/components/orders_list/widgets/orders_list_filters_modal.dart';
+import 'package:woocommerceadmin/src/orders/providers/orders_list_filters_provider.dart';
 
-class ProductsListAppBar {
+class OrdersListAppbar {
   static AppBar getAppBar({
     @required BuildContext context,
     @required Function handleRefresh,
+    @required String baseurl,
+    @required String username,
+    @required String password,
   }) {
-    final ProductsListFiltersProvider productsListFiltersProvider =
-        Provider.of<ProductsListFiltersProvider>(context);
+    final OrdersListFiltersProvider ordersListFiltersProvider =
+        Provider.of<OrdersListFiltersProvider>(context);
+
     return AppBar(
       title: Row(
         children: <Widget>[
-          productsListFiltersProvider.isSearching
+          ordersListFiltersProvider.isSearching
               ? Padding(
                   padding: const EdgeInsets.only(right: 10),
                   child: Icon(Icons.search),
                 )
               : SizedBox.shrink(),
-          productsListFiltersProvider.isSearching
+          ordersListFiltersProvider.isSearching
               ? Expanded(
                   child: TextField(
                     controller: TextEditingController(
-                        text: productsListFiltersProvider.searchValue),
+                        text: ordersListFiltersProvider.searchValue),
                     style: TextStyle(color: Colors.white),
                     textInputAction: TextInputAction.search,
                     decoration: InputDecoration(
                       border: InputBorder.none,
-                      hintText: "Search Products",
+                      hintText: "Search Orders",
                       hintStyle: TextStyle(
                         color: Color.fromRGBO(255, 255, 255, 0.6),
                       ),
                     ),
                     cursorColor: Colors.white,
                     onSubmitted: (String value) {
-                      productsListFiltersProvider.changeSearchValue(value);
+                      ordersListFiltersProvider.changeSearchValue(value);
                       handleRefresh();
                     },
                   ),
                 )
               : Expanded(
-                  child: Text("Products List"),
+                  child: Text("Orders List"),
                 ),
-          productsListFiltersProvider.isSearching
+          ordersListFiltersProvider.isSearching
               ? IconButton(
                   icon: Icon(Icons.center_focus_strong),
-                  onPressed: () => scanBarcode(
-                    context: context,
-                    handleRefresh: handleRefresh,
-                  ),
+                  onPressed: () {
+                    scanBarcode(
+                      context: context,
+                      handleRefresh: handleRefresh,
+                    );
+                  },
                 )
               : IconButton(
                   icon: Icon(Icons.search),
                   onPressed: () {
-                    productsListFiltersProvider.toggleIsSearching();
+                    ordersListFiltersProvider.toggleIsSearching();
                   },
                 ),
           IconButton(
             icon: Icon(Icons.filter_list),
             onPressed: () {
               showDialog(
-                  context: context,
-                  barrierDismissible: false,
-                  builder: (BuildContext context) {
-                    return ProductsListFiltersModal(
-                      handleRefresh: handleRefresh,
-                    );
-                  });
+                context: context,
+                barrierDismissible: false,
+                builder: (BuildContext context) {
+                  return OrdersListFiltersModal(
+                    baseurl: baseurl,
+                    username: username,
+                    password: password,
+                    handleRefresh: handleRefresh,
+                  );
+                },
+              );
             },
           ),
-          productsListFiltersProvider.isSearching
+          ordersListFiltersProvider.isSearching
               ? IconButton(
                   icon: Icon(Icons.close),
                   onPressed: () {
                     bool isPreviousSearchValueNotEmpty = false;
-                    if (productsListFiltersProvider.searchValue.isNotEmpty) {
+                    if (ordersListFiltersProvider.searchValue.isNotEmpty) {
                       isPreviousSearchValueNotEmpty = true;
                     } else {
                       isPreviousSearchValueNotEmpty = false;
                     }
-                    productsListFiltersProvider.toggleIsSearching();
-                    productsListFiltersProvider.changeSearchValue("");
+                    ordersListFiltersProvider.toggleIsSearching();
+                    ordersListFiltersProvider.changeSearchValue("");
                     if (isPreviousSearchValueNotEmpty is bool &&
                         isPreviousSearchValueNotEmpty) {
                       handleRefresh();
@@ -100,11 +110,11 @@ class ProductsListAppBar {
     @required BuildContext context,
     @required Function handleRefresh,
   }) async {
-    ProductsListFiltersProvider productsListFilters =
-        Provider.of<ProductsListFiltersProvider>(context, listen: false);
+    OrdersListFiltersProvider ordersListFiltersProvider =
+        Provider.of<OrdersListFiltersProvider>(context, listen: false);
     try {
       String barcode = await BarcodeScanner.scan();
-      productsListFilters.changeSearchValue(barcode);
+      ordersListFiltersProvider.changeSearchValue(barcode);
       handleRefresh();
     } on PlatformException catch (e) {
       if (e.code == BarcodeScanner.CameraAccessDenied) {

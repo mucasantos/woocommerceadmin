@@ -7,11 +7,6 @@ import 'package:woocommerceadmin/src/products/models/product.dart';
 import 'package:woocommerceadmin/src/products/providers/product_provider.dart';
 
 class ProductDetailsImages extends StatelessWidget {
-  final int id;
-
-  ProductDetailsImages({
-    @required this.id,
-  });
 
   @override
   Widget build(BuildContext context) {

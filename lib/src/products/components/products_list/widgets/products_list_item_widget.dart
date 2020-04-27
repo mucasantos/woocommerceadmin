@@ -34,7 +34,6 @@ class ProductItemWidget extends StatelessWidget {
                   username: username,
                   password: password,
                   id: productProvider?.product?.id,
-                  // productProvider: productProvider,
                 ),
               ),
             ),

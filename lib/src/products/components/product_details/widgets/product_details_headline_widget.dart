@@ -3,12 +3,7 @@ import 'package:provider/provider.dart';
 import 'package:woocommerceadmin/src/products/providers/product_provider.dart';
 
 class ProductDetailsHeadlineWidget extends StatelessWidget {
-  final int id;
-
-  ProductDetailsHeadlineWidget({
-    @required this.id,
-  });
-
+  
   @override
   Widget build(BuildContext context) {
     return Consumer<ProductProvider>(

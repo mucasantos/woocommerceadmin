@@ -9,7 +9,7 @@ import 'package:http/http.dart' as http;
 import 'package:woocommerceadmin/src/common/widgets/single_select.dart';
 import 'package:woocommerceadmin/src/products/models/product.dart';
 import 'package:woocommerceadmin/src/products/providers/product_provider.dart';
-import 'package:woocommerceadmin/src/products/providers/products_list_provider.dart';
+import 'package:woocommerceadmin/src/products/providers/product_providers_list.dart';
 
 class EditProductPricingScreen extends StatefulWidget {
   final String baseurl;
@@ -478,8 +478,9 @@ class _EditProductPricingScreenState extends State<EditProductPricingScreen> {
         if (responseBody is Map &&
             responseBody.containsKey("id") &&
             responseBody["id"] is int) {
-           productProvider.product = Product.fromJson(responseBody);
-         Provider.of<ProductsListProvider>(context, listen: false).replaceProductProviderById(productId, productProvider);
+          productProvider.replaceProduct(Product.fromJson(responseBody));
+          Provider.of<ProductProvidersList>(context, listen: false)
+              .replaceProductProviderById(productId, productProvider);
           Navigator.pop(
               context, "Product pricing details updated successfully...");
         } else {

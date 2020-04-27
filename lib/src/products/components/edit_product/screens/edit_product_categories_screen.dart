@@ -6,7 +6,7 @@ import 'package:http/http.dart' as http;
 import 'package:provider/provider.dart';
 import 'package:woocommerceadmin/src/products/models/product.dart';
 import 'package:woocommerceadmin/src/products/providers/product_provider.dart';
-import 'package:woocommerceadmin/src/products/providers/products_list_provider.dart';
+import 'package:woocommerceadmin/src/products/providers/product_providers_list.dart';
 
 class EditProductCategoriesScreen extends StatefulWidget {
   final String baseurl;
@@ -282,8 +282,8 @@ class _EditProductCategoriesScreenState
         if (responseBody is Map &&
             responseBody.containsKey("id") &&
             responseBody["id"] is int) {
-          productProvider.product = Product.fromJson(responseBody);
-          Provider.of<ProductsListProvider>(context, listen: false)
+          productProvider.replaceProduct(Product.fromJson(responseBody));
+          Provider.of<ProductProvidersList>(context, listen: false)
               .replaceProductProviderById(productId, productProvider);
           Navigator.pop(
               context, "Product categories details updated successfully...");

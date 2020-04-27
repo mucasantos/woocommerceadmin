@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:woocommerceadmin/src/orders/components/orders_list/widgets/orders_list_item_widget.dart';
-import 'package:woocommerceadmin/src/orders/providers/orders_list_provider.dart';
+import 'package:woocommerceadmin/src/orders/providers/order_providers_list.dart';
 
 class OrdersListWidget extends StatelessWidget {
   final String baseurl;
@@ -16,16 +16,16 @@ class OrdersListWidget extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Consumer<OrdersListProvider>(
-      builder: (context, ordersListData, _) {
+    return Consumer<OrderProvidersList>(
+      builder: (context, ordersListProvider, _) {
         return ListView.builder(
-          itemCount: ordersListData.orders.length,
+          itemCount: ordersListProvider.orderProviders.length,
           itemBuilder: (BuildContext context, int index) {
             return OrdersListItemWidget(
               baseurl: baseurl,
               username: username,
               password: password,
-              orderData: ordersListData.orders[index],
+              orderProvider: ordersListProvider.orderProviders[index],
             );
           },
         );

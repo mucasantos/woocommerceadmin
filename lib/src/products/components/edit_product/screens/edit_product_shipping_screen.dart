@@ -7,7 +7,7 @@ import 'package:flutter/services.dart';
 import 'package:provider/provider.dart';
 import 'package:woocommerceadmin/src/products/models/product.dart';
 import 'package:woocommerceadmin/src/products/providers/product_provider.dart';
-import 'package:woocommerceadmin/src/products/providers/products_list_provider.dart';
+import 'package:woocommerceadmin/src/products/providers/product_providers_list.dart';
 
 class EditProductShippingScreen extends StatefulWidget {
   final String baseurl;
@@ -230,8 +230,9 @@ class _EditProductShippingScreenState extends State<EditProductShippingScreen> {
         if (responseBody is Map &&
             responseBody.containsKey("id") &&
             responseBody["id"] is int) {
-          productProvider.product = Product.fromJson(responseBody);
-          Provider.of<ProductsListProvider>(context, listen: false).replaceProductProviderById(productId, productProvider);
+          productProvider.replaceProduct(Product.fromJson(responseBody));
+          Provider.of<ProductProvidersList>(context, listen: false)
+              .replaceProductProviderById(productId, productProvider);
           Navigator.pop(
               context, "Product shipping details updated successfully...");
         } else {

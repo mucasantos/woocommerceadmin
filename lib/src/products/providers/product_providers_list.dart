@@ -1,22 +1,20 @@
 import 'package:flutter/foundation.dart';
 import 'package:woocommerceadmin/src/products/providers/product_provider.dart';
 
-class ProductsListProvider with ChangeNotifier {
+class ProductProvidersList with ChangeNotifier {
   List<ProductProvider> _productProviders = [];
 
   List<ProductProvider> get productProviders => _productProviders;
 
-  ProductProvider getProductById(int id) {
+  ProductProvider getProductProviderById(int id) {
     return _productProviders.firstWhere((item) => item.product.id == id);
   }
 
-  int getProductIndexById(int id) {
-    final productProviderIndex =
-        _productProviders.indexWhere((item) => item.product.id == id);
-    return productProviderIndex;
+  int getProductProviderIndexById(int id) {
+    return _productProviders.indexWhere((item) => item.product.id == id);
   }
 
-  void addProducts(List<ProductProvider> productProviders) {
+  void addProductProviders(List<ProductProvider> productProviders) {
     _productProviders.addAll(productProviders);
     notifyListeners();
   }
@@ -27,7 +25,7 @@ class ProductsListProvider with ChangeNotifier {
   }
 
   void replaceProductProviderById(int id, ProductProvider productProvider) {
-    int productIndex = getProductIndexById(id);
+    int productIndex = getProductProviderIndexById(id);
     if (productIndex >= 0) {
       _productProviders[productIndex] = productProvider;
       notifyListeners();

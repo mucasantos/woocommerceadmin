@@ -9,8 +9,8 @@ import 'package:woocommerceadmin/src/products/components/products_list/widgets/p
 import 'package:woocommerceadmin/src/products/components/products_list/widgets/products_list_widget.dart';
 import 'package:woocommerceadmin/src/products/models/product.dart';
 import 'package:woocommerceadmin/src/products/providers/product_provider.dart';
+import 'package:woocommerceadmin/src/products/providers/product_providers_list.dart';
 import 'package:woocommerceadmin/src/products/providers/products_list_filters_provider.dart';
-import 'package:woocommerceadmin/src/products/providers/products_list_provider.dart';
 
 class ProductsListScreen extends StatefulWidget {
   static const routeName = '/products-list';
@@ -55,7 +55,7 @@ class _ProductsListScreenState extends State<ProductsListScreen> {
         context: context,
         handleRefresh: this.handleRefresh,
       ),
-      body: Consumer<ProductsListProvider>(
+      body: Consumer<ProductProvidersList>(
         builder: (context, productsData, _) {
           return _isListError && productsData.productProviders.isEmpty
               ? _mainErrorWidget()
@@ -166,12 +166,12 @@ class _ProductsListScreenState extends State<ProductsListScreen> {
         dynamic responseBody = json.decode(response.body);
         if (responseBody is List) {
           if (responseBody.isNotEmpty) {
-            final List<ProductProvider> loadedProducts = [];
+            final List<ProductProvider> loadedProductProviders = [];
             responseBody.forEach((item) {
-              loadedProducts.add(ProductProvider(Product.fromJson(item)));
+              loadedProductProviders.add(ProductProvider(Product.fromJson(item)));
             });
-            Provider.of<ProductsListProvider>(context, listen: false)
-                .addProducts(loadedProducts);
+            Provider.of<ProductProvidersList>(context, listen: false)
+                .addProductProviders(loadedProductProviders);
             setState(() {
               _hasMoreToLoad = true;
               _isListLoading = false;
@@ -231,8 +231,8 @@ class _ProductsListScreenState extends State<ProductsListScreen> {
 
   Future<void> handleRefresh() async {
     _page = 1;
-    Provider.of<ProductsListProvider>(context, listen: false).clearProductProvidersList();
-    fetchProductsList();
+    Provider.of<ProductProvidersList>(context, listen: false).clearProductProvidersList();
+    await fetchProductsList();
   }
 
   Widget _mainErrorWidget() {

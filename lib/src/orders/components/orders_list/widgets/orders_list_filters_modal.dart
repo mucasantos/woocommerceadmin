@@ -3,26 +3,22 @@ import 'dart:io';
 import 'package:http/http.dart' as http;
 import 'package:flutter/material.dart';
 import 'package:flutter_spinkit/flutter_spinkit.dart';
+import 'package:provider/provider.dart';
 import 'package:recase/recase.dart';
+import 'package:woocommerceadmin/src/orders/providers/orders_list_filters_provider.dart';
 
 class OrdersListFiltersModal extends StatefulWidget {
   final String baseurl;
   final String username;
   final String password;
-  final String sortOrderByValue;
-  final String sortOrderValue;
-  final Map<String, bool> orderStatusOptions;
-  final void Function(String, String, Map<String, bool>) onSubmit;
+  final Function handleRefresh;
 
   OrdersListFiltersModal({
     Key key,
     @required this.baseurl,
     @required this.username,
     @required this.password,
-    @required this.sortOrderByValue,
-    @required this.sortOrderValue,
-    @required this.orderStatusOptions,
-    @required this.onSubmit,
+    @required this.handleRefresh,
   }) : super(key: key);
 
   @override
@@ -30,10 +26,11 @@ class OrdersListFiltersModal extends StatefulWidget {
 }
 
 class _OrdersListFiltersModalState extends State<OrdersListFiltersModal> {
+  bool _isInit = true;
   String sortOrderByValue = "date";
   String sortOrderValue = "desc";
 
-  bool isOrderStatusOptionsReady = false;
+  bool isOrderStatusOptionsReady = true;
   bool isOrderStatusOptionsError = false;
   String orderStatusOptionsError;
   Map<String, bool> orderStatusOptions = {};
@@ -41,10 +38,22 @@ class _OrdersListFiltersModalState extends State<OrdersListFiltersModal> {
   @override
   void initState() {
     super.initState();
-    sortOrderByValue = widget.sortOrderByValue;
-    sortOrderValue = widget.sortOrderValue;
-    orderStatusOptions = widget.orderStatusOptions;
-    fetchOrderStatusOptions();
+  }
+
+  @override
+  void didChangeDependencies() {
+    if (_isInit) {
+      OrdersListFiltersProvider ordersListFiltersProvider =
+          Provider.of<OrdersListFiltersProvider>(context, listen: false);
+      sortOrderByValue = ordersListFiltersProvider.sortOrderByValue;
+      sortOrderValue = ordersListFiltersProvider.sortOrderValue;
+      orderStatusOptions = ordersListFiltersProvider.orderStatusOptions;
+      if (orderStatusOptions.isEmpty) {
+        fetchOrderStatusOptions();
+      }
+    }
+    _isInit = false;
+    super.didChangeDependencies();
   }
 
   @override
@@ -173,7 +182,7 @@ class _OrdersListFiltersModalState extends State<OrdersListFiltersModal> {
                         ),
                       ],
                     )
-                  : isOrderStatusOptionsReady
+                  : (orderStatusOptions.isNotEmpty && isOrderStatusOptionsReady)
                       ? Column(
                           children: orderStatusOptions.keys.map((String key) {
                             return GestureDetector(
@@ -225,16 +234,20 @@ class _OrdersListFiltersModalState extends State<OrdersListFiltersModal> {
       contentPadding: EdgeInsets.fromLTRB(15, 10, 15, 0),
       actions: <Widget>[
         FlatButton(
-          child: Text("Close"),
+          child: Text("Cancel"),
           onPressed: () {
             Navigator.of(context).pop();
           },
         ),
         FlatButton(
-          child: Text("Ok"),
+          child: Text("Apply"),
           onPressed: () {
-            widget.onSubmit(
-                sortOrderByValue, sortOrderValue, orderStatusOptions);
+            Provider.of<OrdersListFiltersProvider>(context, listen: false)
+                .changeFilterModalValues(
+                    sortOrderByValue: sortOrderByValue,
+                    sortOrderValue: sortOrderValue,
+                    orderStatusOptions: orderStatusOptions);
+            widget.handleRefresh();
             Navigator.of(context).pop();
           },
         )

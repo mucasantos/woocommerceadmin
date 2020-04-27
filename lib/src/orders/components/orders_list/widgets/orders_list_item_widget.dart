@@ -1,20 +1,22 @@
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
+import 'package:provider/provider.dart';
 import 'package:woocommerceadmin/src/orders/components/order_details/screens/order_details_screen.dart';
 import 'package:woocommerceadmin/src/orders/models/order.dart';
 import 'package:recase/recase.dart';
+import 'package:woocommerceadmin/src/orders/providers/order_provider.dart';
 
 class OrdersListItemWidget extends StatelessWidget {
   final String baseurl;
   final String username;
   final String password;
-  final Order orderData;
+  final OrderProvider orderProvider;
 
   OrdersListItemWidget({
     @required this.baseurl,
     @required this.username,
     @required this.password,
-    @required this.orderData,
+    @required this.orderProvider,
   });
 
   @override
@@ -25,11 +27,14 @@ class OrdersListItemWidget extends StatelessWidget {
           Navigator.push(
             context,
             MaterialPageRoute(
-              builder: (context) => OrderDetailsPage(
-                baseurl: baseurl,
-                username: username,
-                password: password,
-                id: orderData.id,
+              builder: (context) => ChangeNotifierProvider.value(
+                value: orderProvider,
+                child: OrderDetailsPage(
+                  baseurl: baseurl,
+                  username: username,
+                  password: password,
+                  id: orderProvider.order.id,
+                ),
               ),
             ),
           );
@@ -47,10 +52,10 @@ class OrdersListItemWidget extends StatelessWidget {
                       mainAxisSize: MainAxisSize.min,
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: <Widget>[
-                        _orderDate(orderData),
-                        _orderIdAndBillingName(orderData, context),
-                        _orderStatus(orderData),
-                        _orderTotal(orderData)
+                        _orderDate(orderProvider.order),
+                        _orderIdAndBillingName(orderProvider.order, context),
+                        _orderStatus(orderProvider.order),
+                        _orderTotal(orderProvider.order)
                       ]),
                 ),
               )
