@@ -34,7 +34,6 @@ class _OrdersListPageState extends State<OrdersListPage> {
   bool _isListError = false;
   String _listError;
 
-  final GlobalKey<ScaffoldState> scaffoldKey = new GlobalKey<ScaffoldState>();
 
   @override
   void initState() {
@@ -56,7 +55,6 @@ class _OrdersListPageState extends State<OrdersListPage> {
     //   () => _showErrorAlert(context),
     // );
     return Scaffold(
-      key: scaffoldKey,
       appBar: OrdersListAppbar.getAppBar(
         context: context,
         handleRefresh: handleRefresh,
@@ -65,8 +63,8 @@ class _OrdersListPageState extends State<OrdersListPage> {
         password: widget.password,
       ),
       body: Consumer<OrderProvidersList>(
-        builder: (context, ordersListProvider, _) {
-          return _isListError && ordersListProvider.orderProviders.isEmpty
+        builder: (context, orderProvidersList, _) {
+          return _isListError && orderProvidersList.orderProviders.isEmpty
               ? _mainErrorWidget()
               : RefreshIndicator(
                   onRefresh: handleRefresh,
@@ -111,28 +109,26 @@ class _OrdersListPageState extends State<OrdersListPage> {
   Future<void> fetchOrdersList({
     int perPage = 25,
   }) async {
-    OrdersListFiltersProvider ordersListFiltersProvider =
+    final OrdersListFiltersProvider ordersListFiltersProvider =
         Provider.of<OrdersListFiltersProvider>(context, listen: false);
     String url =
         "${widget.baseurl}/wp-json/wc/v3/orders?page=$_page&per_page=$perPage&consumer_key=${widget.username}&consumer_secret=${widget.password}";
-    if (ordersListFiltersProvider.searchValue is String &&
+    if (ordersListFiltersProvider?.searchValue is String &&
         ordersListFiltersProvider.searchValue.isNotEmpty) {
       url += "&search=${ordersListFiltersProvider.searchValue}";
     }
-    if (ordersListFiltersProvider.sortOrderByValue is String &&
+    if (ordersListFiltersProvider?.sortOrderByValue is String &&
         ordersListFiltersProvider.sortOrderByValue.isNotEmpty) {
       url += "&orderby=${ordersListFiltersProvider.sortOrderByValue}";
     }
-    if (ordersListFiltersProvider.sortOrderValue is String &&
+    if (ordersListFiltersProvider?.sortOrderValue is String &&
         ordersListFiltersProvider.sortOrderValue.isNotEmpty) {
       url += "&order=${ordersListFiltersProvider.sortOrderValue}";
     }
-    if (ordersListFiltersProvider.orderStatusOptions is Map &&
-        ordersListFiltersProvider.orderStatusOptions.isNotEmpty) {
-      ordersListFiltersProvider.orderStatusOptions.forEach((k, v) {
-        if (v) {
-          url += "&status[]=$k";
-        }
+    if (ordersListFiltersProvider?.selectedOrderStatus is List &&
+        ordersListFiltersProvider.selectedOrderStatus.isNotEmpty) {
+      ordersListFiltersProvider.selectedOrderStatus.forEach((item) {
+          url += "&status[]=$item";
       });
     }
     setState(() {

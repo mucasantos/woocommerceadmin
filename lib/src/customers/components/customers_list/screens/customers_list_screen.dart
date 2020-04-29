@@ -1,21 +1,22 @@
 import 'dart:convert';
 import 'dart:io';
-import 'package:barcode_scan/barcode_scan.dart';
-import 'package:extended_image/extended_image.dart';
-import 'package:flutter/services.dart';
 import 'package:flutter_spinkit/flutter_spinkit.dart';
 import 'package:http/http.dart' as http;
 import 'package:flutter/material.dart';
-import 'package:intl/intl.dart';
-import 'package:woocommerceadmin/src/customers/components/customer_details/screens/customer_details_screen.dart';
-import 'package:woocommerceadmin/src/customers/components/customers_list/widgets/customers_list_filters_modal.dart';
+import 'package:provider/provider.dart';
+import 'package:woocommerceadmin/src/customers/components/customers_list/widgets/customers_list_appbar.dart';
+import 'package:woocommerceadmin/src/customers/components/customers_list/widgets/customers_list_widget.dart';
+import 'package:woocommerceadmin/src/customers/models/customer.dart';
+import 'package:woocommerceadmin/src/customers/providers/customer_provider.dart';
+import 'package:woocommerceadmin/src/customers/providers/customer_providers_list.dart';
+import 'package:woocommerceadmin/src/customers/providers/customers_list_filters_provider.dart';
 
-class CustomersListPage extends StatefulWidget {
+class CustomersListScreen extends StatefulWidget {
   final String baseurl;
   final String username;
   final String password;
 
-  CustomersListPage({
+  CustomersListScreen({
     Key key,
     @required this.baseurl,
     @required this.username,
@@ -23,27 +24,15 @@ class CustomersListPage extends StatefulWidget {
   }) : super(key: key);
 
   @override
-  _CustomersListPageState createState() => _CustomersListPageState();
+  _CustomersListScreenState createState() => _CustomersListScreenState();
 }
 
-class _CustomersListPageState extends State<CustomersListPage> {
-  List customersListData = [];
-  int page = 1;
-  bool hasMoreToLoad = true;
-  bool isListLoading = false;
-  bool isListError = false;
-  String listError;
-
-  bool isSearching = false;
-  String searchValue = "";
-
-  String sortOrderByValue = "registered_date";
-  String sortOrderValue = "desc";
-  String roleFilterValue = "customer";
-
-  final GlobalKey<ScaffoldState> scaffoldKey = new GlobalKey<ScaffoldState>();
-  final GlobalKey<RefreshIndicatorState> _refreshIndicatorKey =
-      new GlobalKey<RefreshIndicatorState>();
+class _CustomersListScreenState extends State<CustomersListScreen> {
+  int _page = 1;
+  bool _hasMoreToLoad = true;
+  bool _isListLoading = false;
+  bool _isListError = false;
+  String _listError;
 
   @override
   void initState() {
@@ -61,142 +50,113 @@ class _CustomersListPageState extends State<CustomersListPage> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      key: scaffoldKey,
-      appBar: _myAppBar(),
-      body: isListError && customersListData.isEmpty
-          ? _mainErrorWidget()
-          : RefreshIndicator(
-              key: _refreshIndicatorKey,
-              onRefresh: handleRefresh,
-              child: Column(
-                children: <Widget>[
-                  Expanded(
-                    child: NotificationListener<ScrollNotification>(
-                      onNotification: (ScrollNotification scrollInfo) {
-                        if (hasMoreToLoad &&
-                            !isListLoading &&
-                            scrollInfo.metrics.pixels ==
-                                scrollInfo.metrics.maxScrollExtent) {
-                          handleLoadMore();
-                        }
-                      },
-                      child: ListView.builder(
-                          itemCount: customersListData.length,
-                          itemBuilder: (BuildContext context, int index) {
-                            return Card(
-                              child: InkWell(
-                                onTap: () {
-                                  Navigator.push(
-                                    context,
-                                    MaterialPageRoute(
-                                      builder: (context) => CustomerDetailsPage(
-                                        baseurl: widget.baseurl,
-                                        username: widget.username,
-                                        password: widget.password,
-                                        id: customersListData[index]["id"],
-                                        customerData: customersListData[index],
-                                        preFetch: false,
-                                      ),
-                                    ),
-                                  );
-                                },
-                                child: Row(
-                                    mainAxisAlignment: MainAxisAlignment.start,
-                                    mainAxisSize: MainAxisSize.max,
-                                    crossAxisAlignment:
-                                        CrossAxisAlignment.center,
-                                    children: <Widget>[
-                                      _customerImage(customersListData[index]),
-                                      Expanded(
-                                        child: Padding(
-                                          padding: const EdgeInsets.all(10.0),
-                                          child: Column(
-                                              mainAxisAlignment:
-                                                  MainAxisAlignment.start,
-                                              mainAxisSize: MainAxisSize.min,
-                                              crossAxisAlignment:
-                                                  CrossAxisAlignment.start,
-                                              children: <Widget>[
-                                                _customerIdAndUsername(
-                                                    customersListData[index]),
-                                                _customerEmail(
-                                                    customersListData[index]),
-                                                _customerName(
-                                                    customersListData[index]),
-                                                _customerIsPaying(
-                                                    customersListData[index]),
-                                                _customerDateCreated(
-                                                    customersListData[index]),
-                                              ]),
-                                        ),
-                                      )
-                                    ]),
-                              ),
-                            );
-                          }),
-                    ),
+      appBar: CustomersListAppbar.getAppBar(
+        context: context,
+        handleRefresh: handleRefresh,
+      ),
+      body: Consumer<CustomerProvidersList>(
+        builder: (context, customerProvidersList, _) {
+          return _isListError && customerProvidersList.customerProviders.isEmpty
+              ? _mainErrorWidget()
+              : RefreshIndicator(
+                  onRefresh: handleRefresh,
+                  child: Column(
+                    children: <Widget>[
+                      Expanded(
+                        child: NotificationListener<ScrollNotification>(
+                          onNotification: (ScrollNotification scrollInfo) {
+                            if (_hasMoreToLoad &&
+                                !_isListLoading &&
+                                scrollInfo.metrics.pixels ==
+                                    scrollInfo.metrics.maxScrollExtent) {
+                              handleLoadMore();
+                            }
+                          },
+                          child: CustomerListWidget(
+                            baseurl: widget.baseurl,
+                            username: widget.username,
+                            password: widget.password,
+                          ),
+                        ),
+                      ),
+                      if (_isListLoading)
+                        Container(
+                          height: 60,
+                          child: Center(
+                              child: SpinKitPulse(
+                            color: Colors.purple,
+                            size: 50,
+                          )),
+                        ),
+                    ],
                   ),
-                  if (isListLoading)
-                    Container(
-                      height: 60,
-                      child: Center(
-                          child: SpinKitPulse(
-                        color: Colors.purple,
-                        size: 50,
-                      )),
-                    ),
-                ],
-              ),
-            ),
+                );
+        },
+      ),
     );
   }
 
-  fetchCustomersList() async {
+  fetchCustomersList({
+    int perPage = 25,
+  }) async {
+    final CustomersListFiltersProvider customersListFiltersProvider =
+        Provider.of<CustomersListFiltersProvider>(context, listen: false);
     String url =
-        "${widget.baseurl}/wp-json/wc/v3/customers?page=$page&per_page=20&consumer_key=${widget.username}&consumer_secret=${widget.password}";
+        "${widget.baseurl}/wp-json/wc/v3/customers?page=$_page&per_page=$perPage&consumer_key=${widget.username}&consumer_secret=${widget.password}";
 
-    if (searchValue is String && searchValue.isNotEmpty) {
-      url += "&search=$searchValue";
+    if (customersListFiltersProvider?.searchValue is String &&
+        customersListFiltersProvider.searchValue.isNotEmpty) {
+      url += "&search=${customersListFiltersProvider.searchValue}";
     }
-    if (sortOrderByValue is String && sortOrderByValue.isNotEmpty) {
-      url += "&orderby=$sortOrderByValue";
+    if (customersListFiltersProvider?.sortOrderByValue is String &&
+        customersListFiltersProvider.sortOrderByValue.isNotEmpty) {
+      url += "&orderby=${customersListFiltersProvider.sortOrderByValue}";
     }
-    if (sortOrderValue is String && sortOrderValue.isNotEmpty) {
-      url += "&order=$sortOrderValue";
+    if (customersListFiltersProvider?.sortOrderValue is String &&
+        customersListFiltersProvider.sortOrderValue.isNotEmpty) {
+      url += "&order=${customersListFiltersProvider.sortOrderValue}";
     }
-    if (roleFilterValue is String && roleFilterValue.isNotEmpty) {
-      url += "&role=$roleFilterValue";
+    if (customersListFiltersProvider.roleFilterValue is String &&
+        customersListFiltersProvider.roleFilterValue.isNotEmpty) {
+      url += "&role=${customersListFiltersProvider.roleFilterValue}";
     }
 
     setState(() {
-      isListLoading = true;
-      isListError = false;
+      _isListLoading = true;
+      _isListError = false;
     });
     http.Response response;
     try {
       response = await http.get(url);
       if (response.statusCode == 200) {
-        if (json.decode(response.body) is List) {
-          if (json.decode(response.body).isNotEmpty) {
+        dynamic responseBody = json.decode(response.body);
+        if (responseBody is List) {
+          if (responseBody.isNotEmpty) {
+            final List<CustomerProvider> loadedCustomerProviders = [];
+            responseBody.forEach((item) {
+              loadedCustomerProviders
+                  .add(CustomerProvider(Customer.fromJson(item)));
+            });
+            Provider.of<CustomerProvidersList>(context, listen: false)
+                .addCustomerProviders(loadedCustomerProviders);
             setState(() {
-              hasMoreToLoad = true;
-              customersListData.addAll(json.decode(response.body));
-              isListLoading = false;
-              isListError = false;
+              _hasMoreToLoad = true;
+              _isListLoading = false;
+              _isListError = false;
             });
           } else {
             setState(() {
-              hasMoreToLoad = false;
-              isListLoading = false;
-              isListError = false;
+              _hasMoreToLoad = false;
+              _isListLoading = false;
+              _isListError = false;
             });
           }
         } else {
           setState(() {
-            hasMoreToLoad = true;
-            isListLoading = false;
-            isListError = true;
-            listError = "Failed to fetch users";
+            _hasMoreToLoad = true;
+            _isListLoading = false;
+            _isListError = true;
+            _listError = "Failed to fetch users";
           });
         }
       } else {
@@ -207,294 +167,48 @@ class _CustomersListPageState extends State<CustomersListPage> {
           errorCode = json.decode(response.body)["code"];
         }
         setState(() {
-          hasMoreToLoad = true;
-          isListLoading = false;
-          isListError = true;
-          listError = "Failed to fetch users. Error: $errorCode";
+          _hasMoreToLoad = true;
+          _isListLoading = false;
+          _isListError = true;
+          _listError = "Failed to fetch users. Error: $errorCode";
         });
       }
     } on SocketException catch (_) {
       setState(() {
-        hasMoreToLoad = true;
-        isListLoading = false;
-        isListError = true;
-        listError = "Failed to fetch users. Error: Network not reachable";
+        _hasMoreToLoad = true;
+        _isListLoading = false;
+        _isListError = true;
+        _listError = "Failed to fetch users. Error: Network not reachable";
       });
     } catch (e) {
       setState(() {
-        hasMoreToLoad = true;
-        isListLoading = false;
-        isListError = true;
-        listError = "Failed to fetch users. Error: $e";
+        _hasMoreToLoad = true;
+        _isListLoading = false;
+        _isListError = true;
+        _listError = "Failed to fetch users. Error: $e";
       });
     }
   }
 
   handleLoadMore() async {
     setState(() {
-      page++;
+      _page++;
     });
     await fetchCustomersList();
   }
 
   Future<void> handleRefresh() async {
     setState(() {
-      page = 1;
-      customersListData = [];
+      _page = 1;
+      Provider.of<CustomerProvidersList>(context, listen: false)
+          .clearCustomerProvidersList();
     });
     await fetchCustomersList();
   }
 
-  Future<void> scanBarcode() async {
-    try {
-      String barcode = await BarcodeScanner.scan();
-      setState(() {
-        searchValue = barcode;
-      });
-      handleRefresh();
-    } on PlatformException catch (e) {
-      if (e.code == BarcodeScanner.CameraAccessDenied) {
-        scaffoldKey.currentState.showSnackBar(SnackBar(
-          content: Text("Camera permission is not granted"),
-          duration: Duration(seconds: 3),
-        ));
-      } else {
-        scaffoldKey.currentState.showSnackBar(SnackBar(
-          content: Text("Unknown barcode scan error: $e"),
-          duration: Duration(seconds: 3),
-        ));
-      }
-    } on FormatException {
-      scaffoldKey.currentState.showSnackBar(SnackBar(
-        content: Text("Barcode scan cancelled"),
-        duration: Duration(seconds: 3),
-      ));
-    } catch (e) {
-      scaffoldKey.currentState.showSnackBar(SnackBar(
-        content: Text("Unknown barcode scan error: $e"),
-        duration: Duration(seconds: 3),
-      ));
-    }
-  }
-
-  Widget _myAppBar() {
-    Widget myAppBar;
-
-    myAppBar = AppBar(
-      title: Row(
-        children: <Widget>[
-          isSearching
-              ? Padding(
-                  padding: const EdgeInsets.only(right: 10),
-                  child: Icon(Icons.search),
-                )
-              : SizedBox.shrink(),
-          isSearching
-              ? Expanded(
-                  child: TextField(
-                    controller: TextEditingController(text: searchValue),
-                    style: TextStyle(color: Colors.white),
-                    textInputAction: TextInputAction.search,
-                    decoration: InputDecoration(
-                      border: InputBorder.none,
-                      hintText: "Search Users",
-                      hintStyle: TextStyle(
-                        color: Color.fromRGBO(255, 255, 255, 0.6),
-                      ),
-                    ),
-                    cursorColor: Colors.white,
-                    onSubmitted: (String value) {
-                      setState(() {
-                        searchValue = value;
-                      });
-                      handleRefresh();
-                    },
-                  ),
-                )
-              : Expanded(child: Text("Customers List")),
-          isSearching
-              ? IconButton(
-                  icon: Icon(Icons.center_focus_strong), onPressed: scanBarcode)
-              : IconButton(
-                  icon: Icon(Icons.search),
-                  onPressed: () {
-                    setState(() {
-                      isSearching = !isSearching;
-                    });
-                  },
-                ),
-          IconButton(
-            icon: Icon(Icons.filter_list),
-            onPressed: () {
-              showDialog(
-                context: context,
-                barrierDismissible: false,
-                builder: (BuildContext context) {
-                  return CustomersListFiltersModal(
-                    baseurl: widget.baseurl,
-                    username: widget.username,
-                    password: widget.password,
-                    sortOrderByValue: sortOrderByValue,
-                    sortOrderValue: sortOrderValue,
-                    roleFilterValue: roleFilterValue,
-                    onSubmit:
-                        (sortOrderByValue, sortOrderValue, roleFilterValue) {
-                      setState(() {
-                        this.sortOrderByValue = sortOrderByValue;
-                        this.sortOrderValue = sortOrderValue;
-                        this.roleFilterValue = roleFilterValue;
-                      });
-                      handleRefresh();
-                    },
-                  );
-                },
-              );
-            },
-          ),
-          isSearching
-              ? IconButton(
-                  icon: Icon(Icons.close),
-                  onPressed: () {
-                    bool isPreviousSearchValueNotEmpty = false;
-                    if (searchValue.isNotEmpty) {
-                      isPreviousSearchValueNotEmpty = true;
-                    } else {
-                      isPreviousSearchValueNotEmpty = false;
-                    }
-                    setState(() {
-                      isSearching = !isSearching;
-                      searchValue = "";
-                    });
-                    if (isPreviousSearchValueNotEmpty is bool &&
-                        isPreviousSearchValueNotEmpty) {
-                      handleRefresh();
-                    }
-                  },
-                )
-              : SizedBox.shrink(),
-        ],
-      ),
-    );
-    return myAppBar;
-  }
-
-  Widget _customerImage(Map customerDetailsMap) {
-    Widget customerImageWidget = Padding(
-      padding: EdgeInsets.all(10),
-      child: SizedBox(
-        height: 140,
-        width: 140,
-        child: Icon(
-          Icons.person,
-          size: 30,
-        ),
-      ),
-    );
-    if (customerDetailsMap.containsKey("avatar_url") &&
-        customerDetailsMap["avatar_url"] is String &&
-        customerDetailsMap["avatar_url"].isNotEmpty) {
-      customerImageWidget = ExtendedImage.network(
-        customerDetailsMap["avatar_url"],
-        fit: BoxFit.fill,
-        width: 140.0,
-        height: 140.0,
-        cache: true,
-        enableLoadState: true,
-        loadStateChanged: (ExtendedImageState state) {
-          if (state.extendedImageLoadState == LoadState.loading) {
-            return SpinKitPulse(
-              color: Theme.of(context).primaryColor,
-              size: 50,
-            );
-          }
-          return null;
-        },
-      );
-    }
-    return customerImageWidget;
-  }
-
-  Widget _customerIdAndUsername(Map customerDetailsMap) {
-    String customerIdAndUsername = "";
-    Widget customerIdAndUsernameWidget = SizedBox();
-
-    if (customerDetailsMap.containsKey("id") &&
-        customerDetailsMap["id"] is int) {
-      customerIdAndUsername += "#${customerDetailsMap["id"]}";
-    }
-
-    if (customerDetailsMap.containsKey("username") &&
-        customerDetailsMap["username"] is String &&
-        customerDetailsMap["username"].toString().isNotEmpty) {
-      customerIdAndUsername += " ${customerDetailsMap["username"]}";
-    }
-
-    customerIdAndUsernameWidget = Text(
-      customerIdAndUsername,
-      style: Theme.of(context)
-          .textTheme
-          .body1
-          .copyWith(fontSize: 20.0, fontWeight: FontWeight.bold),
-    );
-    return customerIdAndUsernameWidget;
-  }
-
-  Widget _customerName(Map customerDetailsMap) {
-    String customerName = "";
-    Widget customerNameWidget = SizedBox();
-    if (customerDetailsMap.containsKey("first_name") &&
-        customerDetailsMap["first_name"] is String &&
-        customerDetailsMap["first_name"].toString().isNotEmpty) {
-      customerName += customerDetailsMap["first_name"];
-    }
-    if (customerDetailsMap.containsKey("last_name") &&
-        customerDetailsMap["last_name"] is String &&
-        customerDetailsMap["last_name"].toString().isNotEmpty) {
-      customerName += " ${customerDetailsMap["last_name"]}";
-    }
-    if (customerName.isNotEmpty) {
-      customerNameWidget = Text("Name: $customerName");
-    }
-    return customerNameWidget;
-  }
-
-  Widget _customerEmail(Map customerDetailsMap) {
-    Widget customerEmailWidget = SizedBox();
-    if (customerDetailsMap.containsKey("email") &&
-        customerDetailsMap["email"] is String &&
-        customerDetailsMap["email"].toString().isNotEmpty) {
-      customerEmailWidget = Text(customerDetailsMap["email"]);
-    }
-    return customerEmailWidget;
-  }
-
-  Widget _customerIsPaying(Map customerDetailsMap) {
-    Widget customerIsPayingWidget = SizedBox();
-    if (customerDetailsMap.containsKey("is_paying_customer") &&
-        customerDetailsMap["is_paying_customer"] is bool) {
-      customerIsPayingWidget = Text("Is Paying: " +
-          (customerDetailsMap["is_paying_customer"] ? "Yes" : "No"));
-    }
-    return customerIsPayingWidget;
-  }
-
-  Widget _customerDateCreated(Map customerDetailsMap) {
-    Widget customerDateCreatedWidget = SizedBox();
-    if (customerDetailsMap.containsKey("date_created") &&
-        customerDetailsMap["date_created"] is String &&
-        customerDetailsMap["date_created"].toString().isNotEmpty) {
-      customerDateCreatedWidget = Text(
-        "Created: " +
-            DateFormat("EEEE, d/M/y h:mm:ss a")
-                .format(DateTime.parse(customerDetailsMap["date_created"])),
-      );
-    }
-    return customerDateCreatedWidget;
-  }
-
   Widget _mainErrorWidget() {
     Widget mainErrorWidget = SizedBox.shrink();
-    if (isListError && listError is String && listError.isNotEmpty)
+    if (_isListError && _listError is String && _listError.isNotEmpty)
       mainErrorWidget = Container(
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
@@ -503,7 +217,7 @@ class _CustomersListPageState extends State<CustomersListPage> {
             Padding(
               padding: const EdgeInsets.fromLTRB(10, 20, 10, 20),
               child: Text(
-                listError ?? "",
+                _listError ?? "",
                 textAlign: TextAlign.center,
               ),
             ),

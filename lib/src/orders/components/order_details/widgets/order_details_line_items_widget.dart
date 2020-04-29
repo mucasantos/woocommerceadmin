@@ -59,12 +59,12 @@ class OrderDetailsLineItemsWidget extends StatelessWidget {
           orderProductsData.add(Text("SKU: ${orderData.lineItems[i].sku}"));
         }
 
-        if (orderData.lineItems[i]?.price is String) {
-          orderProductsData.add(Text("Price: ${orderData.lineItems[i].price}"));
+        if (orderData.lineItems[i]?.price is double) {
+          orderProductsData.add(Text("Price: ${orderData.lineItems[i].price.toStringAsPrecision(4)}"));
         }
 
         if (orderData.lineItems[i]?.quantity is int) {
-          orderProductsData.add(Text("Qty: ${orderData.lineItems[i].price}"));
+          orderProductsData.add(Text("Qty: ${orderData.lineItems[i].quantity}"));
         }
 
         if (orderData.lineItems[i]?.metaData is List &&
@@ -266,10 +266,11 @@ class _LineItemsProductsImageState extends State<LineItemsProductsImage> {
     try {
       final http.Response response = await http.get(url);
       if (response.statusCode == 200) {
-        if (json.decode(response.body) is Map &&
-            json.decode(response.body).containsKey("id")) {
+        dynamic responseBody = json.decode(response.body);
+        if (responseBody is Map &&
+            responseBody.containsKey("id")) {
           setState(() {
-            productData = json.decode(response.body);
+            productData = responseBody;
             isProductDataReady = true;
             isProductDataError = false;
           });

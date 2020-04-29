@@ -1,16 +1,14 @@
 import 'package:flutter/material.dart';
 
-class SingleSelect extends StatefulWidget {
+class SingleSelect extends StatelessWidget {
   final String labelText;
   final TextStyle labelTextStyle;
   final TextStyle modalHeadingTextStyle;
   final TextStyle modalListTextStyle;
   final double modalHeight;
-  final dynamic selectedKey;
-  final List<Map<String, dynamic>> options;
-  final String keyString;
-  final String valueString;
-  final Function(Map<String, dynamic>) onChange;
+  final dynamic selectedValue;
+  final List<SingleSelectMenu> options;
+  final Function(dynamic) onChange;
 
   SingleSelect({
     @required this.labelText,
@@ -18,40 +16,29 @@ class SingleSelect extends StatefulWidget {
     this.modalHeadingTextStyle,
     this.modalListTextStyle,
     this.modalHeight,
-    @required this.selectedKey,
+    @required this.selectedValue,
     @required this.options,
-    @required this.keyString,
-    @required this.valueString,
     @required this.onChange,
   });
 
-  @override
-  _SingleSelectState createState() => _SingleSelectState();
-}
-
-class _SingleSelectState extends State<SingleSelect> {
   final TextEditingController _textController = TextEditingController();
 
   @override
-  void initState() {
-    for (int i = 0; i < widget.options.length; i++) {
-      if (widget.options[i][widget.keyString] == widget.selectedKey) {
-        _textController.text = widget.options[i]["name"];
+  Widget build(BuildContext context) {
+    for (int i = 0; i < options.length; i++) {
+      if (options[i].value == selectedValue) {
+        _textController.text = options[i].name;
       }
     }
-    super.initState();
-  }
 
-  @override
-  Widget build(BuildContext context) {
     return GestureDetector(
       child: AbsorbPointer(
         child: TextFormField(
           controller: _textController,
-          style: widget.labelTextStyle,
+          style: labelTextStyle,
           keyboardType: TextInputType.datetime,
           decoration: InputDecoration(
-            labelText: widget.labelText,
+            labelText: labelText,
             suffixIcon: Icon(Icons.arrow_drop_down),
           ),
         ),
@@ -62,17 +49,15 @@ class _SingleSelectState extends State<SingleSelect> {
           context: context,
           builder: (BuildContext context) {
             return SingleSelectModal(
-              modalHeadingText: widget.labelText,
-              modalHeadingTextStyle: widget.modalHeadingTextStyle,
-              modalListTextStyle: widget.modalListTextStyle,
-              modalHeight: widget.modalHeight,
-              selectedKey: widget.selectedKey,
-              options: widget.options,
-              keyString: widget.keyString,
-              valueString: widget.valueString,
-              onChange: (Map<String, dynamic> value) {
-                _textController.text = value[widget.valueString];
-                widget.onChange(value);
+              modalHeadingText: labelText,
+              modalHeadingTextStyle: modalHeadingTextStyle,
+              modalListTextStyle: modalListTextStyle,
+              modalHeight: modalHeight,
+              selectedValue: selectedValue,
+              options: options,
+              onChange: (SingleSelectMenu singleSelectMenu) {
+                _textController.text = singleSelectMenu.name;
+                onChange(singleSelectMenu.value);
               },
             );
           },
@@ -87,21 +72,17 @@ class SingleSelectModal extends StatefulWidget {
   final TextStyle modalHeadingTextStyle;
   final TextStyle modalListTextStyle;
   final double modalHeight;
-  final dynamic selectedKey;
-  final List<Map<String, dynamic>> options;
-  final String keyString;
-  final String valueString;
-  final Function(Map<String, dynamic>) onChange;
+  final dynamic selectedValue;
+  final List<SingleSelectMenu> options;
+  final Function(SingleSelectMenu) onChange;
 
   SingleSelectModal({
     @required this.modalHeadingText,
     this.modalHeadingTextStyle,
     this.modalListTextStyle,
     this.modalHeight,
-    @required this.selectedKey,
+    @required this.selectedValue,
     @required this.options,
-    @required this.keyString,
-    @required this.valueString,
     @required this.onChange,
   });
 
@@ -115,7 +96,7 @@ class _SingleSelectModalState extends State<SingleSelectModal> {
   @override
   void initState() {
     for (int i = 0; i < widget.options.length; i++) {
-      if (widget.selectedKey == widget.options[i][widget.keyString]) {
+      if (widget.selectedValue == widget.options[i].value) {
         _selectedIndex = i;
       }
     }
@@ -150,7 +131,7 @@ class _SingleSelectModalState extends State<SingleSelectModal> {
                   children: <Widget>[
                     RadioListTile(
                       title: Text(
-                        widget.options[index][widget.valueString],
+                        widget.options[index].name,
                         style: widget.modalListTextStyle,
                       ),
                       value: index,
@@ -175,4 +156,15 @@ class _SingleSelectModalState extends State<SingleSelectModal> {
       ),
     );
   }
+}
+
+class SingleSelectMenu {
+  final dynamic value;
+  final String name;
+
+  SingleSelectMenu({
+    @required this.value,
+    @required this.name,
+  })  : assert(value != null),
+        assert(name != null);
 }

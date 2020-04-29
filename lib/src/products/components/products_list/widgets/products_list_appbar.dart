@@ -2,7 +2,7 @@ import 'package:barcode_scan/barcode_scan.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:provider/provider.dart';
-import 'package:woocommerceadmin/src/products/components/products_list/widgets/products_list_filters_modal.dart';
+import 'package:woocommerceadmin/src/products/components/products_list/screens/products_list_filters_screen.dart';
 import 'package:woocommerceadmin/src/products/providers/products_list_filters_provider.dart';
 
 class ProductsListAppBar {
@@ -62,14 +62,14 @@ class ProductsListAppBar {
           IconButton(
             icon: Icon(Icons.filter_list),
             onPressed: () {
-              showDialog(
-                  context: context,
-                  barrierDismissible: false,
-                  builder: (BuildContext context) {
-                    return ProductsListFiltersModal(
-                      handleRefresh: handleRefresh,
-                    );
-                  });
+              Navigator.push(
+                context,
+                MaterialPageRoute(
+                  builder: (context) => ProductsListFiltersScreen(
+                    handleRefresh: handleRefresh,
+                  ),
+                ),
+              );
             },
           ),
           productsListFiltersProvider.isSearching

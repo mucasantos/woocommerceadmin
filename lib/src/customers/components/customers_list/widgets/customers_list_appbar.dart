@@ -2,67 +2,55 @@ import 'package:barcode_scan/barcode_scan.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:provider/provider.dart';
-import 'package:woocommerceadmin/src/orders/components/orders_list/screens/orders_list_filters_screen.dart';
-import 'package:woocommerceadmin/src/orders/providers/orders_list_filters_provider.dart';
+import 'package:woocommerceadmin/src/customers/components/customers_list/screens/customer_list_filters_screen.dart';
+import 'package:woocommerceadmin/src/customers/providers/customers_list_filters_provider.dart';
 
-class OrdersListAppbar {
+class CustomersListAppbar {
   static AppBar getAppBar({
     @required BuildContext context,
     @required Function handleRefresh,
-    @required String baseurl,
-    @required String username,
-    @required String password,
   }) {
-    final OrdersListFiltersProvider ordersListFiltersProvider =
-        Provider.of<OrdersListFiltersProvider>(context);
+    final CustomersListFiltersProvider customersListFiltersProvider =
+        Provider.of<CustomersListFiltersProvider>(context);
 
     return AppBar(
       title: Row(
         children: <Widget>[
-          ordersListFiltersProvider.isSearching
+          customersListFiltersProvider.isSearching
               ? Padding(
                   padding: const EdgeInsets.only(right: 10),
                   child: Icon(Icons.search),
                 )
               : SizedBox.shrink(),
-          ordersListFiltersProvider.isSearching
+          customersListFiltersProvider.isSearching
               ? Expanded(
                   child: TextField(
                     controller: TextEditingController(
-                        text: ordersListFiltersProvider.searchValue),
+                        text: customersListFiltersProvider.searchValue),
                     style: TextStyle(color: Colors.white),
                     textInputAction: TextInputAction.search,
                     decoration: InputDecoration(
                       border: InputBorder.none,
-                      hintText: "Search Orders",
+                      hintText: "Search Users",
                       hintStyle: TextStyle(
                         color: Color.fromRGBO(255, 255, 255, 0.6),
                       ),
                     ),
                     cursorColor: Colors.white,
                     onSubmitted: (String value) {
-                      ordersListFiltersProvider.changeSearchValue(value);
+                      customersListFiltersProvider.changeSearchValue(value);
                       handleRefresh();
                     },
                   ),
                 )
-              : Expanded(
-                  child: Text("Orders List"),
-                ),
-          ordersListFiltersProvider.isSearching
+              : Expanded(child: Text("Customers List")),
+          customersListFiltersProvider.isSearching
               ? IconButton(
-                  icon: Icon(Icons.center_focus_strong),
-                  onPressed: () {
-                    scanBarcode(
-                      context: context,
-                      handleRefresh: handleRefresh,
-                    );
-                  },
-                )
+                  icon: Icon(Icons.center_focus_strong), onPressed: scanBarcode)
               : IconButton(
                   icon: Icon(Icons.search),
                   onPressed: () {
-                    ordersListFiltersProvider.toggleIsSearching();
+                    customersListFiltersProvider.toggleIsSearching();
                   },
                 ),
           IconButton(
@@ -71,28 +59,25 @@ class OrdersListAppbar {
               Navigator.push(
                 context,
                 MaterialPageRoute(
-                  builder: (context) => OrdersListFiltersScreen(
+                  builder: (context) => CustomersListFiltersScreen(
                     handleRefresh: handleRefresh,
-                    baseurl: baseurl,
-                    username: username,
-                    password: password,
                   ),
                 ),
               );
             },
           ),
-          ordersListFiltersProvider.isSearching
+          customersListFiltersProvider.isSearching
               ? IconButton(
                   icon: Icon(Icons.close),
                   onPressed: () {
                     bool isPreviousSearchValueNotEmpty = false;
-                    if (ordersListFiltersProvider.searchValue.isNotEmpty) {
+                    if (customersListFiltersProvider.searchValue.isNotEmpty) {
                       isPreviousSearchValueNotEmpty = true;
                     } else {
                       isPreviousSearchValueNotEmpty = false;
                     }
-                    ordersListFiltersProvider.toggleIsSearching();
-                    ordersListFiltersProvider.changeSearchValue("");
+                    customersListFiltersProvider.toggleIsSearching();
+                    customersListFiltersProvider.changeSearchValue("");
                     if (isPreviousSearchValueNotEmpty is bool &&
                         isPreviousSearchValueNotEmpty) {
                       handleRefresh();
@@ -109,11 +94,11 @@ class OrdersListAppbar {
     @required BuildContext context,
     @required Function handleRefresh,
   }) async {
-    OrdersListFiltersProvider ordersListFiltersProvider =
-        Provider.of<OrdersListFiltersProvider>(context, listen: false);
+    CustomersListFiltersProvider customersListFiltersProvider =
+        Provider.of<CustomersListFiltersProvider>(context, listen: false);
     try {
       String barcode = await BarcodeScanner.scan();
-      ordersListFiltersProvider.changeSearchValue(barcode);
+      customersListFiltersProvider.changeSearchValue(barcode);
       handleRefresh();
     } on PlatformException catch (e) {
       if (e.code == BarcodeScanner.CameraAccessDenied) {

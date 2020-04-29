@@ -4,6 +4,9 @@ import 'package:shared_preferences/shared_preferences.dart';
 import 'package:woocommerceadmin/src/common/widgets/my_drawer.dart';
 import 'package:woocommerceadmin/src/connections/components/add_connection/screens/add_connection_screen.dart';
 import 'package:woocommerceadmin/src/customers/components/customers_list/screens/customers_list_screen.dart';
+import 'package:woocommerceadmin/src/customers/providers/customer_provider.dart';
+import 'package:woocommerceadmin/src/customers/providers/customer_providers_list.dart';
+import 'package:woocommerceadmin/src/customers/providers/customers_list_filters_provider.dart';
 import 'package:woocommerceadmin/src/db/ConnectionDBProvider.dart';
 import 'package:woocommerceadmin/src/db/models/Connection.dart';
 import 'package:woocommerceadmin/src/orders/components/orders_list/screens/orders_list_screen.dart';
@@ -39,6 +42,12 @@ class MyApp extends StatelessWidget {
         ),
         ChangeNotifierProvider(
           create: (context) => OrderNoteProvidersList(),
+        ),
+        ChangeNotifierProvider(
+          create: (context) => CustomerProvidersList(),
+        ),
+        ChangeNotifierProvider(
+          create: (context) => CustomersListFiltersProvider(),
         )
       ],
       child: MaterialApp(
@@ -160,7 +169,7 @@ class _HomePageState extends State<HomePage> {
               username: _selectedConnection.username,
               password: _selectedConnection.password,
             ),
-            CustomersListPage(
+            CustomersListScreen(
               baseurl: _selectedConnection.baseurl,
               username: _selectedConnection.username,
               password: _selectedConnection.password,

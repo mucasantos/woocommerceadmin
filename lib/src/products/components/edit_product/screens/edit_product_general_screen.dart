@@ -37,6 +37,24 @@ class _EditProductGeneralScreenState extends State<EditProductGeneralScreen> {
   bool virtual;
   bool downloadable;
 
+  final List<SingleSelectMenu> typeOptions = [
+    SingleSelectMenu(value: "simple", name: "Simple"),
+  ];
+
+  final List<SingleSelectMenu> statusOptions = [
+    SingleSelectMenu(value: "draft", name: "Draft"),
+    SingleSelectMenu(value: "pending", name: "Pending"),
+    SingleSelectMenu(value: "private", name: "Private"),
+    SingleSelectMenu(value: "publish", name: "Publish"),
+  ];
+
+  final List<SingleSelectMenu> catalogVisibilityOptions = [
+    SingleSelectMenu(value: "visible", name: "Visible"),
+    SingleSelectMenu(value: "catalog", name: "Catalog"),
+    SingleSelectMenu(value: "search", name: "Search"),
+    SingleSelectMenu(value: "hidden", name: "Hidden"),
+  ];
+
   final scaffoldKey = new GlobalKey<ScaffoldState>();
 
   @override
@@ -114,15 +132,11 @@ class _EditProductGeneralScreenState extends State<EditProductGeneralScreen> {
                                   Theme.of(context).textTheme.subhead,
                               modalListTextStyle:
                                   Theme.of(context).textTheme.body1,
-                              selectedKey: type,
-                              options: [
-                                {"slug": "simple", "name": "Simple"},
-                              ],
-                              keyString: "slug",
-                              valueString: "name",
-                              onChange: (Map<String, dynamic> value) {
+                              selectedValue: type,
+                              options: typeOptions,
+                              onChange: (value) {
                                 setState(() {
-                                  type = value["slug"];
+                                  type = value;
                                 });
                               },
                             ),
@@ -137,18 +151,11 @@ class _EditProductGeneralScreenState extends State<EditProductGeneralScreen> {
                                   Theme.of(context).textTheme.subhead,
                               modalListTextStyle:
                                   Theme.of(context).textTheme.body1,
-                              selectedKey: status,
-                              options: [
-                                {"slug": "draft", "name": "Draft"},
-                                {"slug": "pending", "name": "Pending"},
-                                {"slug": "private", "name": "Private"},
-                                {"slug": "publish", "name": "Publish"},
-                              ],
-                              keyString: "slug",
-                              valueString: "name",
-                              onChange: (Map<String, dynamic> value) {
+                              selectedValue: status,
+                              options: statusOptions,
+                              onChange: (value) {
                                 setState(() {
-                                  status = value["slug"];
+                                  status = value;
                                 });
                               },
                             ),
@@ -163,18 +170,11 @@ class _EditProductGeneralScreenState extends State<EditProductGeneralScreen> {
                                   Theme.of(context).textTheme.subhead,
                               modalListTextStyle:
                                   Theme.of(context).textTheme.body1,
-                              selectedKey: catalogVisibility,
-                              options: [
-                                {"slug": "visible", "name": "Visible"},
-                                {"slug": "catalog", "name": "Catalog"},
-                                {"slug": "search", "name": "Search"},
-                                {"slug": "hidden", "name": "Hidden"},
-                              ],
-                              keyString: "slug",
-                              valueString: "name",
-                              onChange: (Map<String, dynamic> value) {
+                              selectedValue: catalogVisibility,
+                              options: catalogVisibilityOptions,
+                              onChange: (value) {
                                 setState(() {
-                                  catalogVisibility = value["slug"];
+                                  catalogVisibility = value;
                                 });
                               },
                             ),
@@ -342,7 +342,8 @@ class _EditProductGeneralScreenState extends State<EditProductGeneralScreen> {
             responseBody.containsKey("id") &&
             responseBody["id"] is int) {
           productProvider.replaceProduct(Product.fromJson(responseBody));
-          Provider.of<ProductProvidersList>(context, listen: false).replaceProductProviderById(productId, productProvider);
+          Provider.of<ProductProvidersList>(context, listen: false)
+              .replaceProductProviderById(productId, productProvider);
           Navigator.pop(
               context, "Product general details updated successfully...");
         } else {

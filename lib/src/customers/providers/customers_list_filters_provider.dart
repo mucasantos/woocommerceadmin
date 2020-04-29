@@ -1,24 +1,21 @@
 import 'package:flutter/foundation.dart';
-import 'package:woocommerceadmin/src/common/widgets/multi_select.dart';
 
-class OrdersListFiltersProvider with ChangeNotifier {
+class CustomersListFiltersProvider with ChangeNotifier {
   bool _isSearching = false;
   String _searchValue = "";
 
-  String _sortOrderByValue = "date";
+  String _sortOrderByValue = "registered_date";
   String _sortOrderValue = "desc";
-  List<MultiSelectMenu> _orderStatusOptions = [];
-  List _selectedOrderStatus = [];
+  String _roleFilterValue = "customer";
 
   bool get isSearching => _isSearching;
   String get searchValue => _searchValue;
 
   String get sortOrderByValue => _sortOrderByValue;
   String get sortOrderValue => _sortOrderValue;
-  List<MultiSelectMenu> get orderStatusOptions => _orderStatusOptions;
-  List get selectedOrderStatus => _selectedOrderStatus;
+  String get roleFilterValue => _roleFilterValue;
 
-  void toggleIsSearching() {
+   void toggleIsSearching() {
     _isSearching = !_isSearching;
     notifyListeners();
   }
@@ -28,18 +25,14 @@ class OrdersListFiltersProvider with ChangeNotifier {
     notifyListeners();
   }
 
-  void changeOrderStatusOptions(List<MultiSelectMenu> orderStatusOptions){
-    _orderStatusOptions = orderStatusOptions;
-  }
-
   void changeFilterModalValues({
     @required String sortOrderByValue,
     @required String sortOrderValue,
-    @required List selectedOrderStatus,
+    @required String roleFilterValue,
   }) {
     _sortOrderByValue = sortOrderByValue;
     _sortOrderValue = sortOrderValue;
-    _selectedOrderStatus = selectedOrderStatus;
+    _roleFilterValue = roleFilterValue;
     notifyListeners();
   }
 }

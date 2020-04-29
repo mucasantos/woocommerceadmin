@@ -43,6 +43,12 @@ class _EditProductPricingScreenState extends State<EditProductPricingScreen> {
   String taxStatus;
   String taxClass;
 
+   final List<SingleSelectMenu> taxStatusOptions = [
+    SingleSelectMenu(value: "taxable", name: "Taxable"),
+    SingleSelectMenu(value: "shipping", name: "Shipping"),
+    SingleSelectMenu(value: "none", name: "None"),
+  ];
+
   // List productTaxClasses = [];
   // bool isProductTaxClassesReady = false;
   // bool isProductTaxClassesError = false;
@@ -306,17 +312,11 @@ class _EditProductPricingScreenState extends State<EditProductPricingScreen> {
                                   Theme.of(context).textTheme.subhead,
                               modalListTextStyle:
                                   Theme.of(context).textTheme.body1,
-                              selectedKey: taxStatus,
-                              options: [
-                                {"slug": "taxable", "name": "Taxable"},
-                                {"slug": "shipping", "name": "Shipping"},
-                                {"slug": "none", "name": "None"},
-                              ],
-                              keyString: "slug",
-                              valueString: "name",
-                              onChange: (Map<String, dynamic> value) {
+                              selectedValue: taxStatus,
+                              options: taxStatusOptions,
+                              onChange: (value) {
                                 setState(() {
-                                  taxStatus = value["slug"];
+                                  taxStatus = value;
                                 });
                               },
                             ),
@@ -343,20 +343,6 @@ class _EditProductPricingScreenState extends State<EditProductPricingScreen> {
                           color: Theme.of(context).primaryColor,
                           onPressed: () {
                             updateProductData();
-                            // final productData =
-                            //     Provider.of<Products>(context, listen: false);
-
-                            // productData.updateProductPricing(
-                            //   baseurl: widget.baseurl,
-                            //   username: widget.username,
-                            //   password: widget.password,
-                            //   id: productData.findById(widget.id).id,
-                            //   regularPrice: regularPrice,
-                            //   salePrice: salePrice,
-                            //   dateOnSaleFrom: dateOnSaleFrom,
-                            //   dateOnSaleTo: dateOnSaleTo,
-                            //   taxStatus: taxStatus,
-                            // );
                           },
                         ),
                       ),

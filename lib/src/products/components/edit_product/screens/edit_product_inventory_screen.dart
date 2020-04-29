@@ -38,6 +38,18 @@ class _EditProductInventoryScreenState
   int stockQuantity;
   String backorders;
 
+  final List<SingleSelectMenu> stockStatusOptions = [
+    SingleSelectMenu(value: "instock", name: "In stock"),
+    SingleSelectMenu(value: "outofstock", name: "Out of stock"),
+    SingleSelectMenu(value: "onbackorder", name: "On backorder"),
+  ];
+
+   final List<SingleSelectMenu> backordersOptions = [
+    SingleSelectMenu(value: "no", name: "Do not allow"),
+    SingleSelectMenu(value: "notify", name: "Allow, but notify customer"),
+    SingleSelectMenu(value: "yes", name: "Allow"),
+  ];
+
   void didChangeDependencies() {
     if (_isInit) {
       final Product productData =
@@ -118,17 +130,11 @@ class _EditProductInventoryScreenState
                                   Theme.of(context).textTheme.subhead,
                               modalListTextStyle:
                                   Theme.of(context).textTheme.body1,
-                              selectedKey: stockStatus,
-                              options: [
-                                {"slug": "instock", "name": "In Stock"},
-                                {"slug": "outofstock", "name": "Out of Stock"},
-                                {"slug": "onbackorder", "name": "On Backorder"},
-                              ],
-                              keyString: "slug",
-                              valueString: "name",
-                              onChange: (Map<String, dynamic> value) {
+                              selectedValue: stockStatus,
+                              options: stockStatusOptions,
+                              onChange: (value) {
                                 setState(() {
-                                  stockStatus = value["slug"];
+                                  stockStatus = value;
                                 });
                               },
                             ),
@@ -212,20 +218,11 @@ class _EditProductInventoryScreenState
                                     Theme.of(context).textTheme.subhead,
                                 modalListTextStyle:
                                     Theme.of(context).textTheme.body1,
-                                selectedKey: backorders,
-                                options: [
-                                  {"slug": "no", "name": "Do not allow"},
-                                  {
-                                    "slug": "notify",
-                                    "name": "Allow, but notify customer"
-                                  },
-                                  {"slug": "yes", "name": "Allow"},
-                                ],
-                                keyString: "slug",
-                                valueString: "name",
-                                onChange: (Map<String, dynamic> value) {
+                                selectedValue: backorders,
+                                options: backordersOptions,
+                                onChange: (value) {
                                   setState(() {
-                                    backorders = value["slug"];
+                                    backorders = value;
                                   });
                                 },
                               ),
@@ -306,7 +303,8 @@ class _EditProductInventoryScreenState
             responseBody.containsKey("id") &&
             responseBody["id"] is int) {
           productProvider.replaceProduct(Product.fromJson(responseBody));
-          Provider.of<ProductProvidersList>(context, listen: false).replaceProductProviderById(productId, productProvider);
+          Provider.of<ProductProvidersList>(context, listen: false)
+              .replaceProductProviderById(productId, productProvider);
           Navigator.pop(
               context, "Product inventory details updated successfully...");
         } else {
