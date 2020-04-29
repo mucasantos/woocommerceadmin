@@ -43,7 +43,7 @@ class _EditProductPricingScreenState extends State<EditProductPricingScreen> {
   String taxStatus;
   String taxClass;
 
-   final List<SingleSelectMenu> taxStatusOptions = [
+  final List<SingleSelectMenu> taxStatusOptions = [
     SingleSelectMenu(value: "taxable", name: "Taxable"),
     SingleSelectMenu(value: "shipping", name: "Shipping"),
     SingleSelectMenu(value: "none", name: "None"),
@@ -115,216 +115,168 @@ class _EditProductPricingScreenState extends State<EditProductPricingScreen> {
                 Expanded(
                   child: ListView(
                     children: <Widget>[
-                      Padding(
-                        padding: const EdgeInsets.fromLTRB(20, 0, 20, 0),
-                        child: Column(
-                          mainAxisAlignment: MainAxisAlignment.start,
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: <Widget>[
-                            SizedBox(
-                              height: 10,
-                            ),
-                            Text(
-                              "Price",
-                              style: Theme.of(context).textTheme.subhead,
-                            ),
-                            TextFormField(
-                              initialValue: regularPrice ?? "",
-                              style: Theme.of(context).textTheme.body2,
-                              keyboardType: TextInputType.number,
-                              inputFormatters: [
-                                WhitelistingTextInputFormatter(
-                                    RegExp(r"^\d*\.?\d*"))
-                              ],
-                              decoration: InputDecoration(
-                                labelText: "Regular Price",
-                              ),
-                              onChanged: (value) {
-                                setState(() {
-                                  regularPrice = value;
-                                });
-                              },
-                            ),
-                            TextFormField(
-                              initialValue: salePrice ?? "",
-                              style: Theme.of(context).textTheme.body2,
-                              keyboardType: TextInputType.number,
-                              inputFormatters: [
-                                WhitelistingTextInputFormatter(
-                                    RegExp(r"^\d*\.?\d*"))
-                              ],
-                              decoration:
-                                  InputDecoration(labelText: "Sale Price"),
-                              onChanged: (value) {
-                                setState(() {
-                                  salePrice = value;
-                                });
-                              },
-                            ),
-                            SizedBox(
-                              height: 10,
-                            ),
-                            Divider(),
-                            InkWell(
-                              onTap: () {
-                                setState(() {
-                                  _showSaleDates = !_showSaleDates;
-                                });
-                              },
-                              child: Row(
-                                children: <Widget>[
-                                  Expanded(
-                                    child: Text(
-                                      "Schedule Sale",
-                                      style: Theme.of(context).textTheme.body2,
-                                    ),
-                                  ),
-                                  Checkbox(
-                                    value: _showSaleDates,
-                                    onChanged: (bool value) {
-                                      setState(() {
-                                        _showSaleDates = value;
-                                      });
-                                    },
-                                  )
-                                ],
-                              ),
-                            ),
-                            if (_showSaleDates)
-                              Column(
-                                children: <Widget>[
-                                  GestureDetector(
-                                    onTap: () async {
-                                      FocusScope.of(context)
-                                          .requestFocus(FocusNode());
-                                      final DateTime picked =
-                                          await showDatePicker(
-                                        context: context,
-                                        initialDate: dateOnSaleFrom ??
-                                            DateTime.now()
-                                                .subtract(Duration(days: 6)),
-                                        firstDate: DateTime(2015, 8),
-                                        lastDate: DateTime(2101),
-                                        builder: (context, child) {
-                                          return Localizations.override(
-                                            context: context,
-                                            delegates: [
-                                              CancelButtonLocalizationDelegate(),
-                                            ],
-                                            child: child,
-                                          );
-                                        },
-                                      );
-                                      if (picked != dateOnSaleFrom) {
-                                        setState(() {
-                                          dateOnSaleFrom = picked;
-                                          _dateOnSaleFromController.value =
-                                              TextEditingValue(
-                                                  text: dateOnSaleFrom
-                                                          is DateTime
-                                                      ? "${dateOnSaleFrom.toLocal()}"
-                                                          .split(' ')[0]
-                                                      : "");
-                                        });
-                                      }
-                                    },
-                                    child: AbsorbPointer(
-                                      child: TextFormField(
-                                        controller: _dateOnSaleFromController,
-                                        style:
-                                            Theme.of(context).textTheme.body2,
-                                        keyboardType: TextInputType.datetime,
-                                        decoration: InputDecoration(
-                                          labelText: "From",
-                                          suffixIcon:
-                                              Icon(Icons.arrow_drop_down),
-                                        ),
-                                      ),
-                                    ),
-                                  ),
-                                  GestureDetector(
-                                    onTap: () async {
-                                      FocusScope.of(context)
-                                          .requestFocus(FocusNode());
-                                      final DateTime picked =
-                                          await showDatePicker(
-                                        context: context,
-                                        initialDate:
-                                            dateOnSaleTo ?? DateTime.now(),
-                                        firstDate: DateTime(2015, 8),
-                                        lastDate: DateTime(2101),
-                                        builder: (context, child) {
-                                          return Localizations.override(
-                                            context: context,
-                                            delegates: [
-                                              CancelButtonLocalizationDelegate(),
-                                            ],
-                                            child: child,
-                                          );
-                                        },
-                                      );
-                                      if (picked != dateOnSaleTo) {
-                                        setState(() {
-                                          dateOnSaleTo = picked;
-                                          _dateOnSaleToController.value =
-                                              TextEditingValue(
-                                                  text: dateOnSaleTo is DateTime
-                                                      ? "${dateOnSaleTo.toLocal()}"
-                                                          .split(' ')[0]
-                                                      : "");
-                                        });
-                                      }
-                                    },
-                                    child: AbsorbPointer(
-                                      child: TextFormField(
-                                        controller: _dateOnSaleToController,
-                                        style:
-                                            Theme.of(context).textTheme.body2,
-                                        keyboardType: TextInputType.datetime,
-                                        decoration: InputDecoration(
-                                          labelText: "To",
-                                          suffixIcon:
-                                              Icon(Icons.arrow_drop_down),
-                                        ),
-                                      ),
-                                    ),
-                                  ),
-                                  SizedBox(
-                                    height: 10,
-                                  ),
-                                ],
-                              ),
-                            Divider(),
-                            SizedBox(
-                              height: 10,
-                            ),
-                            Text(
-                              "Tax Setting",
-                              style: Theme.of(context).textTheme.subhead,
-                            ),
-                            SizedBox(
-                              height: 10,
-                            ),
-                            SingleSelect(
-                              labelText: "Tax Status",
-                              labelTextStyle: Theme.of(context).textTheme.body2,
-                              modalHeadingTextStyle:
-                                  Theme.of(context).textTheme.subhead,
-                              modalListTextStyle:
-                                  Theme.of(context).textTheme.body1,
-                              selectedValue: taxStatus,
-                              options: taxStatusOptions,
-                              onChange: (value) {
-                                setState(() {
-                                  taxStatus = value;
-                                });
-                              },
-                            ),
-                            SizedBox(
-                              height: 10,
-                            ),
-                            Divider(),
+                      ListTile(
+                        title: Text(
+                          "Price",
+                          style: Theme.of(context).textTheme.subhead,
+                        ),
+                      ),
+                      ListTile(
+                        title: TextFormField(
+                          initialValue: regularPrice ?? "",
+                          style: Theme.of(context).textTheme.body2,
+                          keyboardType: TextInputType.number,
+                          inputFormatters: [
+                            WhitelistingTextInputFormatter(
+                                RegExp(r"^\d*\.?\d*"))
                           ],
+                          decoration: InputDecoration(
+                            labelText: "Regular Price",
+                          ),
+                          onChanged: (value) {
+                            setState(() {
+                              regularPrice = value;
+                            });
+                          },
+                        ),
+                      ),
+                      ListTile(
+                        title: TextFormField(
+                          initialValue: salePrice ?? "",
+                          style: Theme.of(context).textTheme.body2,
+                          keyboardType: TextInputType.number,
+                          inputFormatters: [
+                            WhitelistingTextInputFormatter(
+                                RegExp(r"^\d*\.?\d*"))
+                          ],
+                          decoration: InputDecoration(labelText: "Sale Price"),
+                          onChanged: (value) {
+                            setState(() {
+                              salePrice = value;
+                            });
+                          },
+                        ),
+                      ),
+                      CheckboxListTile(
+                        title: Text(
+                          "Schedule Sale",
+                          style: Theme.of(context).textTheme.body2,
+                        ),
+                        value: _showSaleDates,
+                        onChanged: (bool value) {
+                          setState(() {
+                            _showSaleDates = value;
+                          });
+                        },
+                      ),
+                      if (_showSaleDates)
+                        ListTile(
+                          title: AbsorbPointer(
+                            child: TextFormField(
+                              controller: _dateOnSaleFromController,
+                              style: Theme.of(context).textTheme.body2,
+                              keyboardType: TextInputType.datetime,
+                              decoration: InputDecoration(
+                                labelText: "From",
+                                suffixIcon: Icon(Icons.arrow_drop_down),
+                              ),
+                            ),
+                          ),
+                          onTap: () async {
+                            FocusScope.of(context).requestFocus(FocusNode());
+                            final DateTime picked = await showDatePicker(
+                              context: context,
+                              initialDate: dateOnSaleFrom ??
+                                  DateTime.now().subtract(Duration(days: 6)),
+                              firstDate: DateTime(2015, 8),
+                              lastDate: DateTime(2101),
+                              builder: (context, child) {
+                                return Localizations.override(
+                                  context: context,
+                                  delegates: [
+                                    CancelButtonLocalizationDelegate(),
+                                  ],
+                                  child: child,
+                                );
+                              },
+                            );
+                            if (picked != dateOnSaleFrom) {
+                              setState(() {
+                                dateOnSaleFrom = picked;
+                                _dateOnSaleFromController.value =
+                                    TextEditingValue(
+                                        text: dateOnSaleFrom is DateTime
+                                            ? "${dateOnSaleFrom.toLocal()}"
+                                                .split(' ')[0]
+                                            : "");
+                              });
+                            }
+                          },
+                        ),
+                      if (_showSaleDates)
+                        ListTile(
+                          title: AbsorbPointer(
+                            child: TextFormField(
+                              controller: _dateOnSaleToController,
+                              style: Theme.of(context).textTheme.body2,
+                              keyboardType: TextInputType.datetime,
+                              decoration: InputDecoration(
+                                labelText: "To",
+                                suffixIcon: Icon(Icons.arrow_drop_down),
+                              ),
+                            ),
+                          ),
+                          onTap: () async {
+                            FocusScope.of(context).requestFocus(FocusNode());
+                            final DateTime picked = await showDatePicker(
+                              context: context,
+                              initialDate: dateOnSaleTo ?? DateTime.now(),
+                              firstDate: DateTime(2015, 8),
+                              lastDate: DateTime(2101),
+                              builder: (context, child) {
+                                return Localizations.override(
+                                  context: context,
+                                  delegates: [
+                                    CancelButtonLocalizationDelegate(),
+                                  ],
+                                  child: child,
+                                );
+                              },
+                            );
+                            if (picked != dateOnSaleTo) {
+                              setState(() {
+                                dateOnSaleTo = picked;
+                                _dateOnSaleToController.value =
+                                    TextEditingValue(
+                                        text: dateOnSaleTo is DateTime
+                                            ? "${dateOnSaleTo.toLocal()}"
+                                                .split(' ')[0]
+                                            : "");
+                              });
+                            }
+                          },
+                        ),
+                      Divider(),
+                      ListTile(
+                        title: Text(
+                          "Tax Setting",
+                          style: Theme.of(context).textTheme.subhead,
+                        ),
+                      ),
+                      ListTile(
+                        title: SingleSelect(
+                          labelText: "Tax Status",
+                          labelTextStyle: Theme.of(context).textTheme.body2,
+                          modalHeadingTextStyle:
+                              Theme.of(context).textTheme.subhead,
+                          modalListTextStyle: Theme.of(context).textTheme.body1,
+                          selectedValue: taxStatus,
+                          options: taxStatusOptions,
+                          onChange: (value) {
+                            setState(() {
+                              taxStatus = value;
+                            });
+                          },
                         ),
                       ),
                     ],

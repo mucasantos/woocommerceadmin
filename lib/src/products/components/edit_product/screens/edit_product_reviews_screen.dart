@@ -62,43 +62,17 @@ class _EditProductReviewsScreenState extends State<EditProductReviewsScreen> {
                 Expanded(
                   child: ListView(
                     children: <Widget>[
-                      Padding(
-                        padding: const EdgeInsets.fromLTRB(20, 0, 20, 0),
-                        child: Column(
-                          mainAxisAlignment: MainAxisAlignment.start,
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: <Widget>[
-                            SizedBox(
-                              height: 10,
-                            ),
-                            InkWell(
-                              onTap: () {
-                                setState(() {
-                                  reviewsAllowed = !reviewsAllowed;
-                                });
-                              },
-                              child: Row(
-                                children: <Widget>[
-                                  Expanded(
-                                    child: Text(
-                                      "Reviews Allowed",
-                                      style: Theme.of(context).textTheme.body2,
-                                    ),
-                                  ),
-                                  Checkbox(
-                                    value: reviewsAllowed,
-                                    onChanged: (bool value) {
-                                      setState(() {
-                                        reviewsAllowed = value;
-                                      });
-                                    },
-                                  )
-                                ],
-                              ),
-                            ),
-                            Divider(),
-                          ],
+                      CheckboxListTile(
+                        title: Text(
+                          "Reviews Allowed",
+                          style: Theme.of(context).textTheme.body2,
                         ),
+                        value: reviewsAllowed,
+                        onChanged: (bool value) {
+                          setState(() {
+                            reviewsAllowed = value;
+                          });
+                        },
                       ),
                     ],
                   ),
@@ -137,7 +111,7 @@ class _EditProductReviewsScreenState extends State<EditProductReviewsScreen> {
     final ProductProvider productProvider =
         Provider.of<ProductProvider>(context, listen: false);
     final int productId = productProvider.product.id;
-    
+
     String url =
         "${widget.baseurl}/wp-json/wc/v3/products/$productId?consumer_key=${widget.username}&consumer_secret=${widget.password}";
     http.Response response;
@@ -156,7 +130,8 @@ class _EditProductReviewsScreenState extends State<EditProductReviewsScreen> {
             responseBody.containsKey("id") &&
             responseBody["id"] is int) {
           productProvider.replaceProduct(Product.fromJson(responseBody));
-          Provider.of<ProductProvidersList>(context, listen: false).replaceProductProviderById(productId, productProvider);
+          Provider.of<ProductProvidersList>(context, listen: false)
+              .replaceProductProviderById(productId, productProvider);
           Navigator.pop(
               context, "Product reviews details updated successfully...");
         } else {

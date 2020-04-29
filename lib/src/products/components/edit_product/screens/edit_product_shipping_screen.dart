@@ -71,92 +71,72 @@ class _EditProductShippingScreenState extends State<EditProductShippingScreen> {
                 Expanded(
                   child: ListView(
                     children: <Widget>[
-                      Padding(
-                        padding: const EdgeInsets.fromLTRB(20, 0, 20, 0),
-                        child: Column(
-                          mainAxisAlignment: MainAxisAlignment.start,
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: <Widget>[
-                            SizedBox(
-                              height: 10,
-                            ),
-                            TextFormField(
-                              initialValue: weight is String ? weight : "",
-                              style: Theme.of(context).textTheme.body2,
-                              keyboardType: TextInputType.number,
-                              inputFormatters: [
-                                WhitelistingTextInputFormatter(
-                                    RegExp(r"^\d*\.?\d*"))
-                              ],
-                              decoration: InputDecoration(labelText: "Weight"),
-                              onChanged: (value) {
-                                setState(() {
-                                  weight = value;
-                                });
-                              },
-                            ),
-                            SizedBox(
-                              height: 10,
-                            ),
-                            Divider(),
-                            TextFormField(
-                              initialValue: length is String ? length : "",
-                              style: Theme.of(context).textTheme.body2,
-                              keyboardType: TextInputType.number,
-                              inputFormatters: [
-                                WhitelistingTextInputFormatter(
-                                    RegExp(r"^\d*\.?\d*"))
-                              ],
-                              decoration: InputDecoration(labelText: "Length"),
-                              onChanged: (value) {
-                                setState(() {
-                                  length = value;
-                                });
-                              },
-                            ),
-                            SizedBox(
-                              height: 10,
-                            ),
-                            Divider(),
-                            TextFormField(
-                              initialValue: width is String ? width : "",
-                              style: Theme.of(context).textTheme.body2,
-                              keyboardType: TextInputType.number,
-                              inputFormatters: [
-                                WhitelistingTextInputFormatter(
-                                    RegExp(r"^\d*\.?\d*"))
-                              ],
-                              decoration: InputDecoration(labelText: "Width"),
-                              onChanged: (value) {
-                                setState(() {
-                                  width = value;
-                                });
-                              },
-                            ),
-                            SizedBox(
-                              height: 10,
-                            ),
-                            Divider(),
-                            TextFormField(
-                              initialValue: height is String ? height : "",
-                              style: Theme.of(context).textTheme.body2,
-                              keyboardType: TextInputType.number,
-                              inputFormatters: [
-                                WhitelistingTextInputFormatter(
-                                    RegExp(r"^\d*\.?\d*"))
-                              ],
-                              decoration: InputDecoration(labelText: "Height"),
-                              onChanged: (value) {
-                                setState(() {
-                                  height = value;
-                                });
-                              },
-                            ),
-                            SizedBox(
-                              height: 10,
-                            ),
-                            Divider(),
+                      ListTile(
+                        title: TextFormField(
+                          initialValue: weight is String ? weight : "",
+                          style: Theme.of(context).textTheme.body2,
+                          keyboardType: TextInputType.number,
+                          inputFormatters: [
+                            WhitelistingTextInputFormatter(
+                                RegExp(r"^\d*\.?\d*"))
                           ],
+                          decoration: InputDecoration(labelText: "Weight"),
+                          onChanged: (value) {
+                            setState(() {
+                              weight = value;
+                            });
+                          },
+                        ),
+                      ),
+                      ListTile(
+                        title: TextFormField(
+                          initialValue: length is String ? length : "",
+                          style: Theme.of(context).textTheme.body2,
+                          keyboardType: TextInputType.number,
+                          inputFormatters: [
+                            WhitelistingTextInputFormatter(
+                                RegExp(r"^\d*\.?\d*"))
+                          ],
+                          decoration: InputDecoration(labelText: "Length"),
+                          onChanged: (value) {
+                            setState(() {
+                              length = value;
+                            });
+                          },
+                        ),
+                      ),
+                      ListTile(
+                        title: TextFormField(
+                          initialValue: width is String ? width : "",
+                          style: Theme.of(context).textTheme.body2,
+                          keyboardType: TextInputType.number,
+                          inputFormatters: [
+                            WhitelistingTextInputFormatter(
+                                RegExp(r"^\d*\.?\d*"))
+                          ],
+                          decoration: InputDecoration(labelText: "Width"),
+                          onChanged: (value) {
+                            setState(() {
+                              width = value;
+                            });
+                          },
+                        ),
+                      ),
+                      ListTile(
+                        title: TextFormField(
+                          initialValue: height is String ? height : "",
+                          style: Theme.of(context).textTheme.body2,
+                          keyboardType: TextInputType.number,
+                          inputFormatters: [
+                            WhitelistingTextInputFormatter(
+                                RegExp(r"^\d*\.?\d*"))
+                          ],
+                          decoration: InputDecoration(labelText: "Height"),
+                          onChanged: (value) {
+                            setState(() {
+                              height = value;
+                            });
+                          },
                         ),
                       ),
                     ],

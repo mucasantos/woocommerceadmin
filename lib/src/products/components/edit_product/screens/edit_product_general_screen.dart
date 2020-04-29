@@ -102,166 +102,101 @@ class _EditProductGeneralScreenState extends State<EditProductGeneralScreen> {
                 Expanded(
                   child: ListView(
                     children: <Widget>[
-                      Padding(
-                        padding: const EdgeInsets.fromLTRB(20, 0, 20, 0),
-                        child: Column(
-                          mainAxisAlignment: MainAxisAlignment.start,
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: <Widget>[
-                            SizedBox(
-                              height: 10,
-                            ),
-                            TextFormField(
-                              initialValue: slug is String ? slug : "",
-                              style: Theme.of(context).textTheme.body2,
-                              decoration: InputDecoration(labelText: "Slug"),
-                              onChanged: (String value) {
-                                setState(() {
-                                  slug = value;
-                                });
-                              },
-                            ),
-                            SizedBox(
-                              height: 10,
-                            ),
-                            Divider(),
-                            SingleSelect(
-                              labelText: "Type",
-                              labelTextStyle: Theme.of(context).textTheme.body2,
-                              modalHeadingTextStyle:
-                                  Theme.of(context).textTheme.subhead,
-                              modalListTextStyle:
-                                  Theme.of(context).textTheme.body1,
-                              selectedValue: type,
-                              options: typeOptions,
-                              onChange: (value) {
-                                setState(() {
-                                  type = value;
-                                });
-                              },
-                            ),
-                            SizedBox(
-                              height: 10,
-                            ),
-                            Divider(),
-                            SingleSelect(
-                              labelText: "Status",
-                              labelTextStyle: Theme.of(context).textTheme.body2,
-                              modalHeadingTextStyle:
-                                  Theme.of(context).textTheme.subhead,
-                              modalListTextStyle:
-                                  Theme.of(context).textTheme.body1,
-                              selectedValue: status,
-                              options: statusOptions,
-                              onChange: (value) {
-                                setState(() {
-                                  status = value;
-                                });
-                              },
-                            ),
-                            SizedBox(
-                              height: 10,
-                            ),
-                            Divider(),
-                            SingleSelect(
-                              labelText: "Catalog Visibility",
-                              labelTextStyle: Theme.of(context).textTheme.body2,
-                              modalHeadingTextStyle:
-                                  Theme.of(context).textTheme.subhead,
-                              modalListTextStyle:
-                                  Theme.of(context).textTheme.body1,
-                              selectedValue: catalogVisibility,
-                              options: catalogVisibilityOptions,
-                              onChange: (value) {
-                                setState(() {
-                                  catalogVisibility = value;
-                                });
-                              },
-                            ),
-                            SizedBox(
-                              height: 10,
-                            ),
-                            Divider(),
-                            InkWell(
-                              onTap: () {
-                                setState(() {
-                                  featured = !featured;
-                                });
-                              },
-                              child: Row(
-                                children: <Widget>[
-                                  Expanded(
-                                    child: Text(
-                                      "Featured",
-                                      style: Theme.of(context).textTheme.body2,
-                                    ),
-                                  ),
-                                  Checkbox(
-                                    value: featured,
-                                    onChanged: (bool value) {
-                                      setState(() {
-                                        featured = value;
-                                      });
-                                    },
-                                  )
-                                ],
-                              ),
-                            ),
-                            Divider(),
-                            InkWell(
-                              onTap: () {
-                                setState(() {
-                                  virtual = !virtual;
-                                });
-                              },
-                              child: Row(
-                                children: <Widget>[
-                                  Expanded(
-                                    child: Text(
-                                      "Virtual",
-                                      style: Theme.of(context).textTheme.body2,
-                                    ),
-                                  ),
-                                  Checkbox(
-                                    value: virtual,
-                                    onChanged: (bool value) {
-                                      setState(() {
-                                        virtual = value;
-                                      });
-                                    },
-                                  )
-                                ],
-                              ),
-                            ),
-                            Divider(),
-                            InkWell(
-                              onTap: () {
-                                setState(() {
-                                  downloadable = !downloadable;
-                                });
-                              },
-                              child: Row(
-                                children: <Widget>[
-                                  Expanded(
-                                    child: Text(
-                                      "Downloadable",
-                                      style: Theme.of(context).textTheme.body2,
-                                    ),
-                                  ),
-                                  Checkbox(
-                                    value: downloadable,
-                                    onChanged: (bool value) {
-                                      setState(() {
-                                        downloadable = value;
-                                      });
-                                    },
-                                  )
-                                ],
-                              ),
-                            ),
-                            Divider(),
-                          ],
+                      ListTile(
+                        title: TextFormField(
+                          initialValue: slug is String ? slug : "",
+                          style: Theme.of(context).textTheme.body2,
+                          decoration: InputDecoration(labelText: "Slug"),
+                          onChanged: (String value) {
+                            setState(() {
+                              slug = value;
+                            });
+                          },
                         ),
+                      ),
+                      ListTile(
+                        title: SingleSelect(
+                          labelText: "Type",
+                          labelTextStyle: Theme.of(context).textTheme.body2,
+                          modalHeadingTextStyle:
+                              Theme.of(context).textTheme.subhead,
+                          modalListTextStyle: Theme.of(context).textTheme.body1,
+                          selectedValue: type,
+                          options: typeOptions,
+                          onChange: (value) {
+                            setState(() {
+                              type = value;
+                            });
+                          },
+                        ),
+                      ),
+                      ListTile(
+                        title: SingleSelect(
+                          labelText: "Status",
+                          labelTextStyle: Theme.of(context).textTheme.body2,
+                          modalHeadingTextStyle:
+                              Theme.of(context).textTheme.subhead,
+                          modalListTextStyle: Theme.of(context).textTheme.body1,
+                          selectedValue: status,
+                          options: statusOptions,
+                          onChange: (value) {
+                            setState(() {
+                              status = value;
+                            });
+                          },
+                        ),
+                      ),
+                      ListTile(
+                        title: SingleSelect(
+                          labelText: "Catalog Visibility",
+                          labelTextStyle: Theme.of(context).textTheme.body2,
+                          modalHeadingTextStyle:
+                              Theme.of(context).textTheme.subhead,
+                          modalListTextStyle: Theme.of(context).textTheme.body1,
+                          selectedValue: catalogVisibility,
+                          options: catalogVisibilityOptions,
+                          onChange: (value) {
+                            setState(() {
+                              catalogVisibility = value;
+                            });
+                          },
+                        ),
+                      ),
+                      CheckboxListTile(
+                        title: Text(
+                          "Featured",
+                          style: Theme.of(context).textTheme.body2,
+                        ),
+                        value: featured,
+                        onChanged: (bool value) {
+                          setState(() {
+                            featured = value;
+                          });
+                        },
+                      ),
+                      CheckboxListTile(
+                        title: Text(
+                          "Virtual",
+                          style: Theme.of(context).textTheme.body2,
+                        ),
+                        value: virtual,
+                        onChanged: (bool value) {
+                          setState(() {
+                            virtual = value;
+                          });
+                        },
+                      ),
+                      CheckboxListTile(
+                        title: Text(
+                          "Downloadable",
+                          style: Theme.of(context).textTheme.body2,
+                        ),
+                        value: downloadable,
+                        onChanged: (bool value) {
+                          setState(() {
+                            downloadable = value;
+                          });
+                        },
                       ),
                     ],
                   ),

@@ -44,7 +44,7 @@ class _EditProductInventoryScreenState
     SingleSelectMenu(value: "onbackorder", name: "On backorder"),
   ];
 
-   final List<SingleSelectMenu> backordersOptions = [
+  final List<SingleSelectMenu> backordersOptions = [
     SingleSelectMenu(value: "no", name: "Do not allow"),
     SingleSelectMenu(value: "notify", name: "Allow, but notify customer"),
     SingleSelectMenu(value: "yes", name: "Allow"),
@@ -100,139 +100,92 @@ class _EditProductInventoryScreenState
                 Expanded(
                   child: ListView(
                     children: <Widget>[
-                      Padding(
-                        padding: const EdgeInsets.fromLTRB(20, 0, 20, 0),
-                        child: Column(
-                          mainAxisAlignment: MainAxisAlignment.start,
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: <Widget>[
-                            SizedBox(
-                              height: 10,
-                            ),
-                            TextFormField(
-                              initialValue: sku is String ? sku : null,
-                              style: Theme.of(context).textTheme.body2,
-                              decoration: InputDecoration(labelText: "SKU"),
-                              onChanged: (value) {
-                                setState(() {
-                                  sku = value;
-                                });
-                              },
-                            ),
-                            SizedBox(
-                              height: 10,
-                            ),
-                            Divider(),
-                            SingleSelect(
-                              labelText: "Stock Status",
-                              labelTextStyle: Theme.of(context).textTheme.body2,
-                              modalHeadingTextStyle:
-                                  Theme.of(context).textTheme.subhead,
-                              modalListTextStyle:
-                                  Theme.of(context).textTheme.body1,
-                              selectedValue: stockStatus,
-                              options: stockStatusOptions,
-                              onChange: (value) {
-                                setState(() {
-                                  stockStatus = value;
-                                });
-                              },
-                            ),
-                            SizedBox(
-                              height: 10,
-                            ),
-                            if (stockStatus == "instock")
-                              Column(
-                                children: <Widget>[
-                                  Divider(),
-                                  InkWell(
-                                    onTap: () {
-                                      setState(() {
-                                        manageStock = !manageStock;
-                                      });
-                                    },
-                                    child: Row(
-                                      children: <Widget>[
-                                        Expanded(
-                                          child: Text(
-                                            "Manage Stock",
-                                            style: Theme.of(context)
-                                                .textTheme
-                                                .body2,
-                                          ),
-                                        ),
-                                        Checkbox(
-                                          value: manageStock,
-                                          onChanged: (bool value) {
-                                            setState(() {
-                                              manageStock = value;
-                                            });
-                                          },
-                                        )
-                                      ],
-                                    ),
-                                  ),
-                                ],
-                              ),
-                            if (stockStatus == "instock" && manageStock)
-                              Column(
-                                children: <Widget>[
-                                  TextFormField(
-                                    initialValue: stockQuantity is int
-                                        ? "$stockQuantity"
-                                        : "",
-                                    style: Theme.of(context).textTheme.body2,
-                                    keyboardType: TextInputType.number,
-                                    inputFormatters: [
-                                      WhitelistingTextInputFormatter.digitsOnly
-                                    ],
-                                    decoration: InputDecoration(
-                                        labelText: "Stock Quantity"),
-                                    onChanged: (String value) {
-                                      try {
-                                        setState(() {
-                                          stockQuantity = int.parse(value);
-                                        });
-                                      } catch (e) {
-                                        try {
-                                          setState(() {
-                                            stockQuantity =
-                                                double.parse(value).toInt();
-                                          });
-                                        } catch (e) {}
-                                      }
-                                    },
-                                  ),
-                                  SizedBox(
-                                    height: 10,
-                                  ),
-                                ],
-                              ),
-                            Divider(),
-                            if (stockStatus == "instock")
-                              SingleSelect(
-                                labelText: "Backorders",
-                                labelTextStyle:
-                                    Theme.of(context).textTheme.body2,
-                                modalHeadingTextStyle:
-                                    Theme.of(context).textTheme.subhead,
-                                modalListTextStyle:
-                                    Theme.of(context).textTheme.body1,
-                                selectedValue: backorders,
-                                options: backordersOptions,
-                                onChange: (value) {
-                                  setState(() {
-                                    backorders = value;
-                                  });
-                                },
-                              ),
-                            SizedBox(
-                              height: 10,
-                            ),
-                            Divider(),
-                          ],
+                      ListTile(
+                        title: TextFormField(
+                          initialValue: sku is String ? sku : null,
+                          style: Theme.of(context).textTheme.body2,
+                          decoration: InputDecoration(labelText: "SKU"),
+                          onChanged: (value) {
+                            setState(() {
+                              sku = value;
+                            });
+                          },
                         ),
                       ),
+                      ListTile(
+                        title: SingleSelect(
+                          labelText: "Stock Status",
+                          labelTextStyle: Theme.of(context).textTheme.body2,
+                          modalHeadingTextStyle:
+                              Theme.of(context).textTheme.subhead,
+                          modalListTextStyle: Theme.of(context).textTheme.body1,
+                          selectedValue: stockStatus,
+                          options: stockStatusOptions,
+                          onChange: (value) {
+                            setState(() {
+                              stockStatus = value;
+                            });
+                          },
+                        ),
+                      ),
+                      if (stockStatus == "instock")
+                        CheckboxListTile(
+                          title: Text(
+                            "Manage Stock",
+                            style: Theme.of(context).textTheme.body2,
+                          ),
+                          value: manageStock,
+                          onChanged: (bool value) {
+                            setState(() {
+                              manageStock = value;
+                            });
+                          },
+                        ),
+                      if (stockStatus == "instock" && manageStock)
+                        ListTile(
+                          title: TextFormField(
+                            initialValue:
+                                stockQuantity is int ? "$stockQuantity" : "",
+                            style: Theme.of(context).textTheme.body2,
+                            keyboardType: TextInputType.number,
+                            inputFormatters: [
+                              WhitelistingTextInputFormatter.digitsOnly
+                            ],
+                            decoration:
+                                InputDecoration(labelText: "Stock Quantity"),
+                            onChanged: (String value) {
+                              try {
+                                setState(() {
+                                  stockQuantity = int.parse(value);
+                                });
+                              } catch (e) {
+                                try {
+                                  setState(() {
+                                    stockQuantity = double.parse(value).toInt();
+                                  });
+                                } catch (e) {}
+                              }
+                            },
+                          ),
+                        ),
+                      if (stockStatus == "instock")
+                        ListTile(
+                          title: SingleSelect(
+                            labelText: "Backorders",
+                            labelTextStyle: Theme.of(context).textTheme.body2,
+                            modalHeadingTextStyle:
+                                Theme.of(context).textTheme.subhead,
+                            modalListTextStyle:
+                                Theme.of(context).textTheme.body1,
+                            selectedValue: backorders,
+                            options: backordersOptions,
+                            onChange: (value) {
+                              setState(() {
+                                backorders = value;
+                              });
+                            },
+                          ),
+                        ),
                     ],
                   ),
                 ),
